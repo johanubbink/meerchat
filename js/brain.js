@@ -620,9 +620,20 @@ const ELIZA = [
 /* ---- sentiment + final fallback pool ---- */
 const POS = ["good","great","happy","love","lekker","awesome","nice","amazing","fantastic","excited","won","best"];
 const NEG = ["bad","sad","tired","angry","upset","terrible","awful","stress","worried","sick","lost","worst","hate","lonely"];
+const NEGATORS = new Set(["not","no","never","nie","isn't","ain't","wasn't",
+  "don't","can't","won't","couldn't","shouldn't","hardly","barely","less"]);
 function sentiment(t){
-  let s=0; for(const w of POS) if(t.includes(w)) s++;
-  for(const w of NEG) if(t.includes(w)) s--;
+  /* tokenized with a 2-word negation window: "not so lekker" counts as
+     negative, "never sad" as positive */
+  const w = t.split(/\s+/).filter(Boolean);
+  let s = 0;
+  for (let i = 0; i < w.length; i++){
+    let v = POS.includes(w[i]) ? 1 : NEG.includes(w[i]) ? -1 : 0;
+    if (!v) continue;
+    for (let j = Math.max(0, i-2); j < i; j++)
+      if (NEGATORS.has(w[j])) { v = -v; break; }
+    s += v;
+  }
   return s;
 }
 function echo(text){
@@ -637,6 +648,51 @@ const FOLLOWUPS = [
   "And how's your {TOD} going otherwise?",
   "Go on — I want the details. It's quiet up here.",
 ];
+
+/* ---- graceful fallbacks: admit the miss in character ----
+   Used when no scenario, reflection or state applies. A meerkat that says
+   "beyond my dune" is coherent; a random pool line is junk. */
+const CLARIFY_Q = [
+  "Eish, {W}, that one's beyond my dune. I'm a meerkat — I know sand, sky, scorpions and mob gossip. Try me on one of those?",
+  "You're asking the wrong meerkat, {W}. That's outside my patch of horizon. But ask me about the Kalahari, the mob, or your day — there I'm your girl.",
+  "Yoh, big question. Too big for a sentry on a sand dune, honestly. What I do know: dunes, eagles, jokes, advice. Pick one?",
+  "That one flew right over my mound, {W}. Ask me something a meerkat would know — I'm excellent on those.",
+  "Sjoe, {W}, I'd be making it up if I answered that, and sentries don't make things up above ground. Ask me about my world instead?",
+  "If it's not visible from the top of a sand dune, {W}, it's officially not my department. My department: sky, sand, stories. Choose one?",
+  "Ag, {W}, you need one of those clever city computers for that one. I'm strictly a watching-and-chatting operation up here.",
+];
+const CLARIFY_HUH = [
+  "Is that Meerkat? Because I only caught static, {W}. Say it again, slower — the wind's loud up here.",
+  "Hmm, the wind scrambled that one before it reached the mound. Once more, {W}?",
+  "I stared at that the way Vlokkie stares at a closed burrow. Try me again, {W}?",
+  "Eish, that flew past me like a drongo with a stolen scorpion. What do you mean, {W}?",
+  "You're breaking up, {W} — too much dune between us. Come again, in plain Meerkat or plain English?",
+  "That landed sideways up here. Give it to me once more, {W} — I promise both ears this time.",
+];
+const CLARIFY_STMT = [
+  "Okay — {E}, you say. That's a new one from where I stand. Give me the story behind it, {W}?",
+  "{E}, hey? I'm listening — paint me the picture, {W}. The horizon's quiet anyway.",
+  "Ja, I caught '{E}' but the rest blew past me in the wind. What's going on there, {W}?",
+  "Now that's something we don't get on the dunes. Tell me more about {E}, {W}?",
+  "See, {E} is exactly the kind of thing a sentry files under 'develops'. Develop it for me, {W}?",
+  "Hmm, {E}. Out here we'd stare at that from the mound for a while. What's the fuller story, {W}?",
+];
+const CLARIFY_NEG = [
+  "Eish, {W}, that sounds like a heavy one. Come, tell me properly — what happened?",
+  "Shame man. The mound's a good place to offload — what's going on, {W}?",
+  "Ag no. I'm listening properly now, {W} — from the top, what happened?",
+  "Eish, ja. Even the Kalahari has hard seasons, {W}. Talk to me — what's weighing on you?",
+  "Yoh, that doesn't sound lekker at all. Sit down on the sand a minute, {W}, and tell me the whole thing.",
+];
+const CLARIFY_POS = [
+  "Yoh, lekker! Don't be stingy with the good news, {W} — tell me everything.",
+  "Duidelik! That deserves the full story, {W}. Out with it.",
+  "Sharp-sharp! Come, details — good news travels fast on the dunes, {W}.",
+  "Aweh, that's the spirit! Give me the whole story, {W} — the pups love good news at sunset chorus.",
+  "Lekker man, lekker! And then? Don't skip the juicy parts, {W}.",
+];
+/* mid-conversation the generic pool must not greet or wave goodbye */
+const R_CHAT = R.filter(x => x.c === "chat");
 
 /* ================= CLASSICAL FUZZY LAYER =================
    v11: transformer embeddings are gone. Fuzzy intent matching is now
@@ -880,22 +936,39 @@ async function pickReplyInner(raw){
     return fill(bagPick("cb", CALLBACKS)).replace("{T}", tp);
   }
 
-  // 8. sentiment + 1000-line pool (with non-repeating rotation)
+  // 8. graceful fallback: emotional statements get a matching-valence
+  //    invitation to elaborate; questions get an honest in-character
+  //    deflection; unintelligible input gets a "say again"; plain
+  //    statements get an echo + clarifying question. The random pool only
+  //    fires as a variety valve right after a clarify, and then only with
+  //    neutral "chat" lines — no greeting or goodbye junk mid-conversation.
+  lastUserMsg = text;
   const s = sentiment(t);
-  let prefix = "";
-  if (s<0) prefix = pick(["Shame man, "+who()+". ","Eish, that's rough. "]);
-  if (s>0) prefix = pick(["Yoh, lekker! ","Duidelik! "]);
-  let pe = bagPick("pool", R);
-  let reply = prefix + pe.t;
-  if (!prefix && Math.random()<0.5){
+  if (s < 0){ mem.lastRoute = "clarify:neg"; return fill(bagPick("cl:neg", CLARIFY_NEG)); }
+  if (s > 0){ mem.lastRoute = "clarify:pos"; return fill(bagPick("cl:pos", CLARIFY_POS)); }
+  const prev = mem.history.length ? mem.history[mem.history.length-1].route : null;
+  const justClarified = prev && prev.startsWith("clarify");
+  if (!justClarified){
+    const tkn = toks(text);
+    const known = tkn.filter(w => DF[w] !== undefined).length;
+    if (!tkn.length || known / tkn.length < 0.34){
+      mem.lastRoute = "clarify:huh"; return fill(bagPick("cl:huh", CLARIFY_HUH));
+    }
+    if (/\?/.test(text) || /^(what|who|where|when|why|how|which|can|could|do|does|did|is|are|will|would|should)\b/i.test(text)){
+      mem.lastRoute = "clarify:q"; return fill(bagPick("cl:q", CLARIFY_Q));
+    }
     const e = echo(text);
-    if (e) { pe = bagPick("pool", R); reply = `"${capitalize(e)}", you say? ` + pe.t; }
+    if (e){
+      remember(e);
+      mem.lastRoute = "clarify:stmt";
+      return fill(bagPick("cl:stmt", CLARIFY_STMT).replaceAll("{E}", e));
+    }
   }
+  let reply = bagPick("pool", R_CHAT).t;
   if (mem.name && Math.random()<0.2 && !reply.includes(mem.name))
     reply = reply.replace(/\b(boet|bru|china|swaer|my friend|ou maat|bokkie|my bru)\b/, mem.name);
   if (Math.random()<0.4) reply += " " + fill(bagPick("followups", FOLLOWUPS));
-  lastUserMsg = text;
-  mem.lastRoute = "pool:"+pe.c;
+  mem.lastRoute = "pool:chat";
   return reply;
 }
 async function pickReply(raw){
