@@ -62,7 +62,7 @@ function go() {
   const delay = 500 + Math.random() * 700;
   setTimeout(async () => {
     let reply;
-    try { reply = await pickReply(text); }
+    try { reply = await (typeof getReply === "function" ? getReply(text) : pickReply(text)); }
     catch (e) { console.warn(e); reply = "Eish, the wind took my words there. Say again, " + who() + "?"; }
     typing.lastChild.textContent = reply;
     chat.scrollTop = chat.scrollHeight;

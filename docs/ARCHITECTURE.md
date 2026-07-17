@@ -14,6 +14,7 @@ js/data/frames.js   ASCII-art animation frames (F)
 js/data/responses.js  1000-line generic fallback pool (R), tagged by category
 js/data/protos.js   extra prototype sentences + keywords per scenario (data)
 js/brain.js         all chat logic, no DOM access (testable in Node)
+js/llm.js           clever brain: optional on-device LLM layer (v13)
 js/ui.js            DOM wiring: animation loop, art scaling, chat bubbles
 ```
 
@@ -109,6 +110,31 @@ fill from the clock.
 unmodified production brain and scores every response deterministically; an
 LLM-judge protocol scores sampled transcripts. See `eval/README.md` and
 `eval/results/HISTORY.md` for the metric progression. Run `node eval/run.js`.
+
+## The clever brain (js/llm.js, v13 prototype)
+
+Progressive enhancement: an on-device LLM composes Tsamma's replies,
+grounded in the scripted brain. brain.js keeps running unchanged as router,
+state machine (name, memory, pending questions) and instant fallback — the
+page behaves exactly like v12 if no model ever loads, and any generation
+failure falls back to the scripted reply for that turn.
+
+- Backends: WebLLM over WebGPU for real users (tiers, largest first:
+  Qwen3.5-9B ~6.4 GB VRAM, Llama-3.1-8B ~5.0 GB, Qwen3-4B ~3.4 GB,
+  Qwen2.5-3B, Qwen3-1.7B, Llama-3.2-1B ~0.9 GB; each failure steps down);
+  or any OpenAI-compatible local endpoint for development
+  (?llm=<url>, auto-detected on localhost:8080).
+- Per turn: pickReply() runs first (state advances, scripted reply
+  produced), then the LLM gets the persona bible, the memory state, the
+  last 8 turns, the user message, and a grounding note built from the
+  scripted route: prepared material (jokes/stories) is delivered nearly
+  verbatim, scenario answers are rephrased in context, clarify routes
+  become "admit it's beyond your dune, never invent facts".
+- Guardrails: 120-token cap, 30 s timeout, sanitizer (strips think-tags,
+  roleplay asterisks, speaker labels; bans AI-self-reference; trims to
+  chat length; rejects exact repeats) — every rejection returns the
+  scripted reply; three consecutive failures switch back to classical.
+- URL params: ?brain=classic, ?model=<webllm-id>, ?llm=<url>.
 
 ## Paradigm note: neural embeddings
 
