@@ -788,17 +788,18 @@ async function pickReplyInner(raw){
   if (mem.lastScen && CONT_RE.test(text)){
     const sc = mem.lastScen;
     if (sc.more && mem.moreIdx < sc.more.length)
-      { const r = fill(sc.more[mem.moreIdx++]); lastUserMsg = text; return r; }
+      { const r = fill(sc.more[mem.moreIdx++]); lastUserMsg = text; mem.lastRoute = "cont:more:"+sc.id; return r; }
     if (/another|again|more/i.test(text) && sc.a.length > 1)
-      { lastUserMsg = text; return pickA(sc); }
+      { lastUserMsg = text; mem.lastRoute = "cont:again:"+sc.id; return pickA(sc); }
     lastUserMsg = text;
+    mem.lastRoute = "cont:generic";
     return fill(bagPick("cont", CONT_GENERIC));
   }
 
   // 1. exact regexes (must run before name capture, so a first message
   //    like "version" or "help" hits its scenario instead of becoming a name)
   for (const sc of SCEN)
-    if (sc.re && sc.re.test(text)) { lastUserMsg = text; return useScen(sc); }
+    if (sc.re && sc.re.test(text)) { lastUserMsg = text; mem.lastRoute = "regex:"+sc.id; return useScen(sc); }
 
   // 1.5 she asked their name: a short, non-question reply that doesn't
   //     route anywhere else IS the name
@@ -817,33 +818,35 @@ async function pickReplyInner(raw){
       const r = pick([`${mem.name}! Lekker to meet you properly. Sentries never forget a face — or a name. So what's your ${tod()} looking like, ${mem.name}?`,
                       `Aweh, ${mem.name}! Welcome to the mound. Now we're proper chinas. What's news your side?`]);
       mem.pending = true;
+      mem.lastRoute = "namecapture";
       return r;
     }
   } else if (mem.awaitName && mem.name) mem.awaitName = false;
 
   // 2. name capture must run before generic ELIZA
   const nameM = text.match(ELIZA[0][0]);
-  if (nameM) { lastUserMsg = text; mem.pending = false; mem.awaitName = false; return ELIZA[0][1](nameM); }
+  if (nameM) { lastUserMsg = text; mem.pending = false; mem.awaitName = false; mem.lastRoute = "eliza:name"; return ELIZA[0][1](nameM); }
 
   // 3. strong classical fuzzy match beats everything else
   const hit = fuzzyHit(text);
-  if (hit && hit.score >= TH.strong) { lastUserMsg = text; return useScen(hit.sc); }
+  if (hit && hit.score >= TH.strong) { lastUserMsg = text; mem.lastRoute = "fuzzy-strong:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
 
   // 4. scenario keywords (before ELIZA so 'can you give me advice' finds advice)
   const kh = keywordHit(t);
-  if (kh) { lastUserMsg = text; return useScen(kh); }
+  if (kh) { lastUserMsg = text; mem.lastRoute = "keyword:"+kh.id; return useScen(kh); }
 
   // 5. ELIZA reflections, then weak fuzzy
   for (let i = 1; i < ELIZA.length; i++){
     const m = text.match(ELIZA[i][0]);
-    if (m) { lastUserMsg = text; mem.pending = false; return ELIZA[i][1](m); }
+    if (m) { lastUserMsg = text; mem.pending = false; mem.lastRoute = "eliza:"+i; return ELIZA[i][1](m); }
   }
-  if (hit && hit.score >= TH.weak) { lastUserMsg = text; return useScen(hit.sc); }
+  if (hit && hit.score >= TH.weak) { lastUserMsg = text; mem.lastRoute = "fuzzy-weak:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
 
   // 6. she asked you something last turn: acknowledge the answer
   if (mem.pending){
     mem.pending = false;
     lastUserMsg = text;
+    mem.lastRoute = "ack";
     const e = echo(text);
     return fill(bagPick("acks", ACKS)) + (e ? `"${capitalize(e)}" — ja. ` : "") + fill(bagPick("acktails", ACK_TAILS));
   }
@@ -853,6 +856,7 @@ async function pickReplyInner(raw){
     mem.lastCb = mem.turns;
     const tp = mem.topics.shift();
     lastUserMsg = text;
+    mem.lastRoute = "callback";
     return fill(bagPick("cb", CALLBACKS)).replace("{T}", tp);
   }
 
@@ -861,20 +865,22 @@ async function pickReplyInner(raw){
   let prefix = "";
   if (s<0) prefix = pick(["Shame man, "+who()+". ","Eish, that's rough. "]);
   if (s>0) prefix = pick(["Yoh, lekker! ","Duidelik! "]);
-  let reply = prefix + bagPick("pool", R).t;
+  let pe = bagPick("pool", R);
+  let reply = prefix + pe.t;
   if (!prefix && Math.random()<0.5){
     const e = echo(text);
-    if (e) reply = `"${capitalize(e)}", you say? ` + bagPick("pool", R).t;
+    if (e) { pe = bagPick("pool", R); reply = `"${capitalize(e)}", you say? ` + pe.t; }
   }
   if (mem.name && Math.random()<0.2 && !reply.includes(mem.name))
     reply = reply.replace(/\b(boet|bru|china|swaer|my friend|ou maat|bokkie|my bru)\b/, mem.name);
   if (Math.random()<0.4) reply += " " + fill(bagPick("followups", FOLLOWUPS));
   lastUserMsg = text;
+  mem.lastRoute = "pool:"+pe.c;
   return reply;
 }
 async function pickReply(raw){
   const r = await pickReplyInner(raw);
-  mem.history.push({ u: raw, a: r });
+  mem.history.push({ u: raw, a: r, route: mem.lastRoute });
   if (mem.history.length > 8) mem.history.shift();
   return r;
 }

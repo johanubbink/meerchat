@@ -1,0 +1,1875 @@
+{
+ "intents": [
+  {
+   "id": "name",
+   "acceptable": [],
+   "messages": [
+    "so what's this meerkat's name then?",
+    "I don't think you ever introduced yourself",
+    "and you are...?",
+    "hey, what do they call you out there?",
+    "whats ur name again",
+    "wat should i call u",
+    "howzit boet, wie is jy?",
+    "aweh, what's your naam my bru?",
+    "Good day! Would you mind telling me your name and who exactly you are?",
+    "name please?"
+   ]
+  },
+  {
+   "id": "myname",
+   "acceptable": [],
+   "messages": [
+    "quick test, what am I called?",
+    "bet you forgot my name already",
+    "have I told you my name yet?",
+    "go on, guess my name",
+    "do u even kno my name",
+    "whats my name then",
+    "howzit, you still remember my name china?",
+    "ag bru, you know who I am or not?",
+    "We've been chatting for a while now, do you actually remember what I'm called?",
+    "know my name?"
+   ]
+  },
+  {
+   "id": "home",
+   "acceptable": [],
+   "messages": [
+    "so where's your burrow at?",
+    "which part of the world do you call home?",
+    "whereabouts do you stay?",
+    "what part of the Kalahari are you in?",
+    "wher u from",
+    "where dyu actually live",
+    "waar bly jy, bru?",
+    "howzit, where's your plek in the desert?",
+    "I'm curious about your home, where exactly are you based?",
+    "where's home?"
+   ]
+  },
+  {
+   "id": "family",
+   "acceptable": [],
+   "messages": [
+    "who else lives in the burrow with you?",
+    "who's the boss in your family?",
+    "how big is the mob you're part of?",
+    "tell me about your mama",
+    "u got brothers n sisters",
+    "hows ur family doing",
+    "howzit with the rest of your mob, bru?",
+    "is your ma the boss of the burrow?",
+    "I'd love to hear about your family, who do you share your burrow with?",
+    "got any siblings?"
+   ]
+  },
+  {
+   "id": "age",
+   "acceptable": [],
+   "messages": [
+    "how long have you been alive?",
+    "are you young or old for a meerkat?",
+    "what's your age in meerkat years?",
+    "how many years have you got on you?",
+    "hw old r u tho",
+    "whats your age meerkat",
+    "hoe oud is jy, Tsamma?",
+    "you still a laaitie or already grown, bru?",
+    "If you don't mind me asking, how old are you in human years?",
+    "your age?"
+   ]
+  },
+  {
+   "id": "gender",
+   "acceptable": [],
+   "messages": [
+    "are you a he or a she?",
+    "should I call you mr or mrs meerkat?",
+    "wait, are you a girl meerkat?",
+    "what pronouns should I use for you?",
+    "r u a boy or wat",
+    "girl meerkat or boy meerkat",
+    "is jy 'n meisie of 'n seuntjie?",
+    "so are you an oom or a tannie, hey?",
+    "Just wondering, are you a female meerkat or a male one, if I may ask?",
+    "he or she?"
+   ]
+  },
+  {
+   "id": "looks",
+   "acceptable": [],
+   "messages": [
+    "what would I see if I bumped into you?",
+    "paint me a picture of yourself",
+    "how big are you compared to a house cat?",
+    "how tall do you stand on that mound?",
+    "wot do u look like irl",
+    "describe ur appearance for me",
+    "how do you look, my bru? cute or scary?",
+    "how groot are you exactly, boet?",
+    "I've never actually seen a meerkat in real life, what does one of you look like up close?",
+    "how cute are you?"
+   ]
+  },
+  {
+   "id": "personality",
+   "acceptable": [],
+   "messages": [
+    "how would your friends describe you?",
+    "what sort of character are you?",
+    "would you say you're serious or silly?",
+    "tell me what you're like as a meerkat",
+    "whats ur personality like",
+    "wat kind of meerkat r u, personality wise",
+    "are you lekker chilled or a bit of a stresskop?",
+    "what's your vibe, boet, serious or jokey?",
+    "I'd like to get to know you better, how would you describe your own personality?",
+    "describe your character"
+   ]
+  },
+  {
+   "id": "birthday",
+   "acceptable": [],
+   "messages": [
+    "when do you celebrate your birthday out there?",
+    "do meerkats even have birthdays? when's yours?",
+    "which season were you born in?",
+    "what date were you born on?",
+    "wen is ur bday",
+    "happy bday tsamma!!",
+    "when's your verjaarsdag, bru?",
+    "howzit, when do you turn another year older?",
+    "I was wondering whether meerkats celebrate birthdays, when is yours?",
+    "birthday when?"
+   ]
+  },
+  {
+   "id": "job",
+   "acceptable": [],
+   "messages": [
+    "what's your role in the mob?",
+    "do you have a job out there in the desert?",
+    "so what work does a meerkat actually do?",
+    "why are you always standing up on that mound?",
+    "wat is ur job exactly",
+    "what do u do for a livin",
+    "so what's your werk, boet?",
+    "are you the lookout ou for your mob?",
+    "Could you tell me what your job entails, what is it you do for the mob?",
+    "what's your work?"
+   ]
+  },
+  {
+   "id": "eats",
+   "acceptable": [],
+   "messages": [
+    "what's on the menu for a meerkat?",
+    "what kind of food do you enjoy most?",
+    "do you really eat scorpions?",
+    "what did you have for breakfast today?",
+    "wot food do u eet",
+    "whats your fav food",
+    "what kos do you smaak, bru?",
+    "what do you chow out there in the Kalahari?",
+    "I'm curious about your diet, what sort of things do you eat in the desert?",
+    "favourite snack?"
+   ]
+  },
+  {
+   "id": "jackal",
+   "acceptable": [],
+   "messages": [
+    "who's your biggest rival out there?",
+    "do you have a nemesis out there?",
+    "what's the story with Ou Skelm?",
+    "tell me about that jackal that hangs around your burrow",
+    "whos ur enemy then",
+    "tell me abt the jakal",
+    "is that skelm jakkals still bothering your mob?",
+    "that jackal oke still skulking around, hey?",
+    "I've heard there's a jackal that troubles your mob, what's his story?",
+    "jackal update?"
+   ]
+  },
+  {
+   "id": "fear",
+   "acceptable": [],
+   "messages": [
+    "is there anything that actually scares you out there?",
+    "do you ever get frightened on sentry duty?",
+    "what's the scariest thing in the Kalahari for you?",
+    "anything that freaks you out?",
+    "wat r u scared of",
+    "whats ur biggest fear tho",
+    "bru, what makes a brave meerkat skrik?",
+    "eish, surely something out there gives you the creeps?",
+    "If you don't mind me asking, is there anything in the desert that truly terrifies you?",
+    "biggest fear?"
+   ]
+  },
+  {
+   "id": "dream",
+   "acceptable": [],
+   "messages": [
+    "what's your biggest dream in life?",
+    "if you could have one wish, what would it be?",
+    "what do you hope happens one day?",
+    "got any big goals for the future?",
+    "wats ur dream in life",
+    "if u could wish for anything wat wud it be",
+    "bru if a genie pitched up at your burrow, what would you ask for?",
+    "what's the big droom, Tsamma?",
+    "I'd love to know, if anything were possible, what would you most hope to see happen?",
+    "biggest wish ever?"
+   ]
+  },
+  {
+   "id": "lifestory",
+   "acceptable": [],
+   "messages": [
+    "so what's your story, Tsamma?",
+    "give me the full rundown on who you are",
+    "how did you grow up out there?",
+    "walk me through your life from pup to now",
+    "tel me ur life storey",
+    "whats ur back story then",
+    "gooi your whole story from the start, boet",
+    "howzit, so what's the tale of Tsamma then, from the beginning?",
+    "I'd genuinely love to hear your whole history, from when you were a pup right up to today.",
+    "your whole story?"
+   ]
+  },
+  {
+   "id": "bot",
+   "acceptable": [],
+   "messages": [
+    "wait, am I chatting with a real animal or just software?",
+    "be honest, there's a computer behind this, right?",
+    "you're not actually a meerkat, this is a program isn't it",
+    "is someone typing for you or is this automated?",
+    "r u a robot lol",
+    "is this an ai fr",
+    "ag no man, you're a bot hey?",
+    "for real bru, is this just a computer pretending to be a meerkat?",
+    "Genuine question: am I speaking with an artificial intelligence, or do you insist you're a living meerkat?",
+    "real or bot?"
+   ]
+  },
+  {
+   "id": "version",
+   "acceptable": [],
+   "messages": [
+    "which version of you am I talking to?",
+    "what release is this meerkat running?",
+    "is this the newest version of the app?",
+    "how can I tell what version I've got here?",
+    "wich versoin is this",
+    "what verson r u",
+    "howzit, is this the latest version or an old one bru?",
+    "which build we on now, boet?",
+    "Could you tell me which version of this chatbot I am currently using, please?",
+    "version number?"
+   ]
+  },
+  {
+   "id": "friends",
+   "acceptable": [],
+   "messages": [
+    "who do you hang out with when you're not on duty?",
+    "got any close mates out there?",
+    "who's your bestie?",
+    "is there anyone you're really tight with?",
+    "do u hav any frends",
+    "whos ur best frend tho",
+    "who's your top chommie, Tsamma?",
+    "howzit, got any bras out there in the dunes?",
+    "I'm curious about your social life, do you have any special friends you spend your days with?",
+    "any best mates?"
+   ]
+  },
+  {
+   "id": "hobby",
+   "acceptable": [],
+   "messages": [
+    "what do you get up to when you're off duty?",
+    "any hobbies besides standing on that mound?",
+    "how do you keep yourself entertained out there?",
+    "what do you enjoy doing when you're not watching for eagles?",
+    "wat do u do 4 fun out there",
+    "got any hobbys or is it all guard duty",
+    "what do you do for jollies out there, bru?",
+    "lekker, so what's your vibe off duty, any pastimes?",
+    "Outside of your sentry responsibilities, what sorts of activities do you most enjoy in your spare time?",
+    "hobbies then?"
+   ]
+  },
+  {
+   "id": "colour",
+   "acceptable": [],
+   "messages": [
+    "what colour do you like best?",
+    "do you even have a favourite colour out there in all that sand?",
+    "if you had to pick one colour, which would it be?",
+    "got a colour you're partial to?",
+    "wats ur fav color",
+    "whts your favrite colour then",
+    "what's your best colour, boet?",
+    "which colour do you find the most lekker?",
+    "Random question, but do you happen to have a favourite colour, and if so, what is it?",
+    "fave colour?"
+   ]
+  },
+  {
+   "id": "animal",
+   "acceptable": [],
+   "messages": [
+    "what animal do you like the most?",
+    "besides meerkats, which animal do you rate highest?",
+    "if you had to pick a favourite creature, what would it be?",
+    "is there an animal out there you really love?",
+    "whats ur fav animal",
+    "wich animel do u like best",
+    "boet, what's your best animal out there?",
+    "which animal do you rate as the most lekker?",
+    "Of all the creatures in the Kalahari, which one would you say is your absolute favourite?",
+    "favourite creature?"
+   ]
+  },
+  {
+   "id": "cando",
+   "acceptable": [
+    "topics"
+   ],
+   "messages": [
+    "what kinds of things can I ask you to do?",
+    "so what are you actually capable of?",
+    "what sort of stuff can you do for me?",
+    "what are you good at, besides watching for eagles?",
+    "wat can u actually do",
+    "so wot r ur abilities exactly",
+    "so what can you do for an ou like me, bru?",
+    "what tricks you got up your sleeve, boet?",
+    "Before we carry on, could you give me an overview of what you're able to help with?",
+    "your capabilities?"
+   ]
+  },
+  {
+   "id": "topics",
+   "acceptable": [
+    "cando"
+   ],
+   "messages": [
+    "what should we chat about?",
+    "give me some ideas of things to discuss",
+    "not sure what to say to a meerkat, any suggestions?",
+    "what kind of questions do you like getting?",
+    "idk wat to talk abt",
+    "gimme somthing to chat about pls",
+    "ag I'm blank, bru, throw me a topic",
+    "what's there to chat about on the dunes, my china?",
+    "I'm honestly not sure where to begin, what subjects do you most enjoy discussing?",
+    "topic suggestions?"
+   ]
+  },
+  {
+   "id": "languages",
+   "acceptable": [],
+   "messages": [
+    "how many languages do you know?",
+    "do you understand Afrikaans or just English?",
+    "could you chat to me in Zulu if I wanted?",
+    "is English the only language you can do?",
+    "wat langauges can u speak",
+    "do u no any afrikaans",
+    "praat jy Afrikaans, my bru?",
+    "can you gooi a bit of isiZulu or is it English only?",
+    "Out of interest, which languages are you able to understand and reply in?",
+    "speak any Afrikaans?"
+   ]
+  },
+  {
+   "id": "joke",
+   "acceptable": [],
+   "messages": [
+    "come on, cheer me up with your best joke",
+    "do you know any meerkat jokes?",
+    "I need a laugh today, got anything funny?",
+    "hit me with your funniest joke",
+    "u got any funny jokes",
+    "tel me somthing funy pls",
+    "gooi me a lekker joke there boet",
+    "ag bru, crack a funny one for me quick",
+    "Hello Tsamma, I could do with some cheering up, would you please share your funniest joke?",
+    "joke please"
+   ]
+  },
+  {
+   "id": "riddle",
+   "acceptable": [],
+   "messages": [
+    "got any riddles for me?",
+    "ask me a riddle, I bet I'll get it",
+    "give me a puzzle to crack",
+    "test me with one of your riddles",
+    "riddle me somethin tsamma",
+    "do u no any ridles",
+    "howzit, gooi a riddle my way bru",
+    "ag boet, give us a lekker riddle to chew on",
+    "I do enjoy a good riddle, would you mind setting me one to solve?",
+    "riddle time?"
+   ]
+  },
+  {
+   "id": "fact",
+   "acceptable": [],
+   "messages": [
+    "teach me something cool about the kalahari",
+    "hit me with an interesting fact",
+    "what's a fact most people don't know about meerkats?",
+    "share a random fact with me",
+    "gimme sum meerkat trivia pls",
+    "tel me a intresting fact about the desert",
+    "gooi a lekker fact my way boet",
+    "ag tsamma, drop some meerkat knowledge on us man",
+    "I'd love to learn something new today, could you share an interesting fact about desert life?",
+    "random fact?"
+   ]
+  },
+  {
+   "id": "story",
+   "acceptable": [],
+   "messages": [
+    "got any good stories from the dunes?",
+    "tell me one of your desert stories",
+    "I'm in the mood for a story, got one?",
+    "spin me a story about the old days",
+    "story time pls tsamma",
+    "u got a bedtime storry for me",
+    "aweh, gooi us a lekker story there bru",
+    "ag boet, spin us a lekker tale by the fire",
+    "If you have a moment, I would love to hear one of Mama Nossob's stories please.",
+    "story time!"
+   ]
+  },
+  {
+   "id": "sing",
+   "acceptable": [],
+   "messages": [
+    "go on, sing for me",
+    "I want to hear you sing something",
+    "belt out one of your songs for me",
+    "sing that sunset song of yours",
+    "sing 4 me pls",
+    "can u sing me a lil song",
+    "aweh, gooi us a liedjie there bru",
+    "come on man, sing us a lekker tune",
+    "Would you do me the honour of performing one of your meerkat songs?",
+    "give us a song"
+   ]
+  },
+  {
+   "id": "game",
+   "acceptable": [],
+   "messages": [
+    "are you keen for a game?",
+    "can we play something quick?",
+    "what games do you know how to play?",
+    "I feel like playing a game with you",
+    "lets play sumthing fun",
+    "u wanna play a gaem",
+    "howzit bru, keen for a quick game?",
+    "ag kom, let's speel a game quick man",
+    "I have some free time, shall we play a little game together?",
+    "game time?"
+   ]
+  },
+  {
+   "id": "secret",
+   "acceptable": [],
+   "messages": [
+    "got any secrets to share?",
+    "whisper me one of your secrets",
+    "what's your biggest secret, Tsamma?",
+    "share a secret with me, I won't tell anyone",
+    "tell me ur secrets tsamma",
+    "do u hav a secrit for me",
+    "come bru, spill a secret, I won't blab to the mob",
+    "ag man, what secret you hiding up on that mound?",
+    "I promise to keep it quiet, would you trust me with one of your secrets?",
+    "any secrets?"
+   ]
+  },
+  {
+   "id": "smart",
+   "acceptable": [],
+   "messages": [
+    "would you say you're clever?",
+    "how smart are you really?",
+    "are you actually intelligent or just cute?",
+    "what's your IQ, Tsamma?",
+    "how brainy r u",
+    "are u acutally clever tho",
+    "you a slim meerkat or what, bru?",
+    "howzit, you got a good kop on you or just fluff?",
+    "Out of curiosity, how would you rate your own intelligence as a meerkat?",
+    "you clever?"
+   ]
+  },
+  {
+   "id": "creator",
+   "acceptable": [],
+   "messages": [
+    "who's responsible for making you?",
+    "who put you on this website?",
+    "who programmed you?",
+    "who do you answer to, who's in charge of you?",
+    "who made u then",
+    "hu is ur creater",
+    "who's your baas, bru?",
+    "eish, so who put you together, my bru?",
+    "May I ask who was responsible for creating you in the first place?",
+    "your maker?"
+   ]
+  },
+  {
+   "id": "privacy",
+   "acceptable": [],
+   "messages": [
+    "does anyone else see what I type here?",
+    "where do my messages go after I send them?",
+    "are our chats stored anywhere?",
+    "is what I tell you kept private?",
+    "do u keep my chat history",
+    "r u recordin everything i say",
+    "ey bru, this chat just between us or what?",
+    "ag, you're not selling my info to the jackals are you?",
+    "Before I share anything personal, could you tell me whether this conversation is stored or sent anywhere?",
+    "is this confidential?"
+   ]
+  },
+  {
+   "id": "datetime",
+   "acceptable": [],
+   "messages": [
+    "do you know today's date?",
+    "what day of the week is it?",
+    "can you tell me the current time?",
+    "hey, what's the date right now?",
+    "hey wats the date rn",
+    "whats teh time pls",
+    "howzit boet, what day we on today?",
+    "eish I lost track bru, what's the date?",
+    "I've completely lost track of time out here, could you tell me today's day and date please?",
+    "time check?"
+   ]
+  },
+  {
+   "id": "howwork",
+   "acceptable": [],
+   "messages": [
+    "how does this chatbot actually work?",
+    "what's happening inside your head when you answer me?",
+    "how do you come up with your replies?",
+    "explain how you were put together",
+    "how do u even work lol",
+    "how dose ur brain work",
+    "yoh bru, how does that kop of yours actually work?",
+    "ag tell me boet, what's the trick behind this whole chat thing?",
+    "I'm quite curious about the mechanics, could you explain how you function behind the scenes?",
+    "how you work?"
+   ]
+  },
+  {
+   "id": "weather",
+   "acceptable": [],
+   "messages": [
+    "it's absolutely boiling here today",
+    "do you think it will rain later?",
+    "how's the sky looking over the dunes today?",
+    "it's freezing on my side this morning",
+    "so hot todya i cant even think",
+    "is it gona rain by u",
+    "yoh it's warm today né, proper Kalahari heat",
+    "eish, the wind is pumping here in the Cape today",
+    "Might I ask what the conditions are like out on the dunes this afternoon? Any clouds about?",
+    "rain coming?"
+   ]
+  },
+  {
+   "id": "news",
+   "acceptable": [],
+   "messages": [
+    "so what's been going on at the burrow lately?",
+    "any big happenings on the dunes today?",
+    "tell me the latest from your side",
+    "anything exciting happen since we last spoke?",
+    "wats happenin out ther today",
+    "any newz from the mound this mornin",
+    "howzit, what's the skinner from the mob today?",
+    "gooi me the latest mob gossip, bru",
+    "Good day Tsamma, would you kindly give me the full news bulletin from the Kalahari this morning?",
+    "news update please"
+   ]
+  },
+  {
+   "id": "compliment",
+   "acceptable": [],
+   "messages": [
+    "haha you honestly crack me up",
+    "you're such a vibe, I love chatting to you",
+    "that was a good one, you're quite the comedian",
+    "you might be the most charming meerkat on the internet",
+    "lol ur hilarious",
+    "i like u so much lil meerkat",
+    "ag you're a lekker one, Tsamma",
+    "yoh bru you're sharp hey",
+    "I must say, you are genuinely one of the most delightful conversationalists I've encountered in ages.",
+    "you're brilliant"
+   ]
+  },
+  {
+   "id": "romance",
+   "acceptable": [],
+   "messages": [
+    "I think I've properly fallen for you, Tsamma",
+    "would you say yes if I proposed to you?",
+    "I want you to be my girlfriend, what do you say?",
+    "got a massive crush on you, not gonna lie",
+    "wil u mary me tsamma",
+    "im in love with u for real",
+    "jinne Tsamma, be my bokkie please",
+    "you single, my skat? asking for myself",
+    "This may be rather forward of me, but I'm quite smitten with you and would happily propose marriage.",
+    "be mine, Tsamma"
+   ]
+  },
+  {
+   "id": "love",
+   "acceptable": [],
+   "messages": [
+    "so is there a special someone in your life?",
+    "have you got a boyfriend somewhere in the mob?",
+    "have you ever been in love, Tsamma?",
+    "what's romance like for meerkats?",
+    "u got a bf or wat",
+    "do meerkats even fall in luv",
+    "so do you have an ou, Tsamma?",
+    "any romance happening your side, china?",
+    "If you don't mind my asking, is there a romantic partner in your life at present?",
+    "you dating anyone?"
+   ]
+  },
+  {
+   "id": "complimentme",
+   "acceptable": [],
+   "messages": [
+    "tell me honestly what you make of me",
+    "do you actually like me, Tsamma?",
+    "say something sweet about me",
+    "what's your favourite thing about me?",
+    "do u even like me tho",
+    "say sumthing nice abt me pls",
+    "ag man, gooi me a compliment quick",
+    "am I a lekker chommie or what?",
+    "Would you be so kind as to tell me what you genuinely think of me as a person?",
+    "compliment me please"
+   ]
+  },
+  {
+   "id": "insult",
+   "acceptable": [],
+   "messages": [
+    "you're actually pretty useless, you know that",
+    "this is the dumbest conversation I've ever had",
+    "talking to you is a waste of my time",
+    "you're not nearly as clever as you think, meerkat",
+    "ur so anoying man",
+    "u r boring me to deth",
+    "you chat pure twak, man",
+    "you're a real domkop, hey",
+    "I have to be honest with you, I find you rather irritating and not particularly clever.",
+    "you're an idiot"
+   ]
+  },
+  {
+   "id": "swear",
+   "acceptable": [],
+   "messages": [
+    "fucking hell, that's wild",
+    "well shit, I didn't expect that answer",
+    "ah dammit, I keep typing the wrong thing",
+    "what the actual hell, wtf man",
+    "wtf is even goin on",
+    "oh shitt i keep messing this up lol",
+    "jou bliksem, you gave me a proper skrik there",
+    "eish bru, this load shedding is kak",
+    "Pardon my French, but this entire week has been an absolute shitshow from start to finish.",
+    "fuck it all"
+   ]
+  },
+  {
+   "id": "wrong",
+   "acceptable": [],
+   "messages": [
+    "that's not right at all, check again",
+    "huh, that answer had nothing to do with my question",
+    "you keep giving me the exact same answer over and over",
+    "no man, that's not what I asked you",
+    "that maks no sence dude",
+    "u alredy said this b4",
+    "haibo Tsamma, that answer is way off, try again",
+    "nee man, you've got it all mixed up",
+    "I'm afraid that response is incorrect; that isn't what I was asking about at all.",
+    "that's just wrong"
+   ]
+  },
+  {
+   "id": "test",
+   "acceptable": [],
+   "messages": [
+    "just checking if this thing actually works",
+    "let me see if you actually respond to this",
+    "can you read this? doing a quick test",
+    "mic check one two, can you hear me",
+    "tesing 123",
+    "jus a quik test ignore me",
+    "is this thing aan? test test, né",
+    "bru im just testing if you're alive on this side",
+    "Please ignore this message; I'm simply testing whether the chat is functioning correctly.",
+    "test test test"
+   ]
+  },
+  {
+   "id": "feelings",
+   "acceptable": [],
+   "messages": [
+    "do you ever feel emotions like we do?",
+    "are you actually happy out there on that mound?",
+    "can a meerkat feel sadness or joy?",
+    "be honest, do you feel things the way people do?",
+    "r u even capable of feelins",
+    "do u ever get sad or happy",
+    "tell me china, does a meerkat actually have feelings?",
+    "you happy up on that mound, my bru?",
+    "I'm genuinely curious whether you experience real emotions, or if it's all part of the performance.",
+    "you happy, Tsamma?"
+   ]
+  },
+  {
+   "id": "lonelybot",
+   "acceptable": [],
+   "messages": [
+    "doesn't it get lonely standing up there all day?",
+    "do you ever wish you had company up on that mound?",
+    "isn't sentry duty terribly boring after a while?",
+    "don't you get sick of being alone up there?",
+    "dont u get lonley up ther",
+    "u ever get bored watchin all day",
+    "eish bru, doesn't that mound get lonely by sunset?",
+    "isn't it dead boring up there, my china?",
+    "I've often wondered whether you feel isolated, spending all those hours alone on sentry duty.",
+    "ever get lonely?"
+   ]
+  },
+  {
+   "id": "howru",
+   "acceptable": [],
+   "messages": [
+    "how are things on your end today?",
+    "you doing alright up on that mound?",
+    "so how's life treating you?",
+    "everything good with you today?",
+    "hows things going with u",
+    "u doin ok tsamma",
+    "hoe gaan dit met jou vandag, boet?",
+    "alles lekker your side, my china?",
+    "I do hope the sentry life is treating you well — how are you feeling today?",
+    "you good today?"
+   ]
+  },
+  {
+   "id": "thanks",
+   "acceptable": [],
+   "messages": [
+    "thanks a million for listening to me",
+    "that actually helped, thank you",
+    "appreciate you taking the time to chat",
+    "thank you for cheering me up",
+    "thx man that helped",
+    "thanx for chatting wit me tsamma",
+    "baie dankie my vriend",
+    "shot bru, appreciate it",
+    "I really want to thank you for taking the time to talk with me today.",
+    "many thanks tsamma"
+   ]
+  },
+  {
+   "id": "sorry",
+   "acceptable": [],
+   "messages": [
+    "sorry for what I said earlier",
+    "I apologise for being rude to you",
+    "my apologies, that came out wrong",
+    "sorry, I didn't mean that",
+    "im sory about earlier",
+    "my bad dude didnt mean it",
+    "jammer man, I was out of line",
+    "ag sorry hey, no hard feelings?",
+    "I want to sincerely apologise for the way I spoke to you just now.",
+    "sorry about that"
+   ]
+  },
+  {
+   "id": "missyou",
+   "acceptable": [
+    "greetscen"
+   ],
+   "messages": [
+    "it's been ages, I really missed you",
+    "haven't chatted to you in forever, missed our talks",
+    "been thinking about you while I was away",
+    "did you notice I was gone so long?",
+    "i missed u lil meerkat",
+    "long time no see hey i m back",
+    "aweh, your favourite human has returned!",
+    "howzit, missed you stacks my bru",
+    "It's been quite a while since we last spoke and I genuinely missed our chats.",
+    "missed you loads"
+   ]
+  },
+  {
+   "id": "greetscen",
+   "acceptable": [],
+   "messages": [
+    "hello hello, anybody up on that mound?",
+    "hey there Tsamma, I'm here for a chat",
+    "good afternoon from the big city!",
+    "top of the morning to you, meerkat",
+    "helo tsamma u there",
+    "hey heyy wats up",
+    "aweh my bru, lekker to see you",
+    "howzit howzit, wat sê jy?",
+    "Well hello there Tsamma, lovely to make your acquaintance this fine afternoon.",
+    "hi hi tsamma"
+   ]
+  },
+  {
+   "id": "byescen",
+   "acceptable": [],
+   "messages": [
+    "okay I need to head out now, talk soon",
+    "time for me to log off, night night",
+    "I'm off to bed, chat tomorrow",
+    "right, I'd better get going",
+    "gtg cya later",
+    "ok bye bye now tsamma",
+    "sharp sharp, I'm out",
+    "lekker chat boet, totsiens né",
+    "It's been wonderful chatting with you but I really must be going now, goodnight.",
+    "later meerkat"
+   ]
+  },
+  {
+   "id": "advice",
+   "acceptable": [
+    "decide"
+   ],
+   "messages": [
+    "I have a problem and don't know what to do",
+    "I could use some guidance right now",
+    "got a dilemma, need your wisdom",
+    "any tips for handling a tough situation?",
+    "i need ur advice on something",
+    "help me out here i dont know wat to do",
+    "bru, I've got a serious problem, can you help?",
+    "ag man, gooi some of that sentry wisdom my way",
+    "I'm dealing with a tricky situation and would really value your guidance on what I should do.",
+    "need advice please"
+   ]
+  },
+  {
+   "id": "sad",
+   "acceptable": [],
+   "messages": [
+    "just feeling really low lately",
+    "today has been a rough one for me",
+    "everything just feels heavy at the moment",
+    "I've been crying all afternoon",
+    "im so sad rn",
+    "feelin down n blue today idk why",
+    "eish man, everything's going skeef for me lately",
+    "ag nee boet, I'm feeling proper down today",
+    "I don't really know why, but I have been feeling quite sad and tearful all week.",
+    "I'm just miserable"
+   ]
+  },
+  {
+   "id": "lonely",
+   "acceptable": [
+    "sad"
+   ],
+   "messages": [
+    "I've got no one to talk to these days",
+    "feels like everyone has forgotten about me",
+    "I spend every evening alone by myself",
+    "wish I had someone to hang out with",
+    "im so lonly tonight",
+    "no one ever texts me back i feel alone",
+    "eish bru, I've got zero mates around here",
+    "it's just me, myself en ek every single day, man",
+    "To be honest, I have been feeling terribly isolated and alone for quite some time now.",
+    "so alone lately"
+   ]
+  },
+  {
+   "id": "tired",
+   "acceptable": [],
+   "messages": [
+    "I barely slept at all last night",
+    "I'm completely wiped out today",
+    "running on empty today, really need a nap",
+    "been yawning all day, zero energy",
+    "im exausted man",
+    "cant keep my eyes open 2day so tired",
+    "yoh bru, I'm absolutely finished, need my bed",
+    "eish, ek is so moeg today",
+    "I've been sleeping terribly all week and I'm honestly running on fumes at this point.",
+    "totally drained today"
+   ]
+  },
+  {
+   "id": "stress",
+   "acceptable": [],
+   "messages": [
+    "my mind won't stop racing about everything",
+    "I've got way too much on my plate right now",
+    "I can't stop worrying about tomorrow",
+    "feeling completely overwhelmed by everything at the moment",
+    "im stressin out big time",
+    "so anxius rn cant calm down",
+    "yoh boet, my nerves are completely gone today",
+    "eish, I'm proper op my senuwees about this week",
+    "There is so much going on in my life right now and the anxiety is really getting on top of me.",
+    "totally stressing out"
+   ]
+  },
+  {
+   "id": "angry",
+   "acceptable": [],
+   "messages": [
+    "I'm absolutely fuming right now",
+    "someone really made my blood boil today",
+    "I could scream, I'm so mad",
+    "still seething about what happened earlier",
+    "im so cross rite now",
+    "ugh im ragin today evrything making me mad",
+    "ek is so kwaad right now man",
+    "yoh, I'm gatvol and cross with everyone today",
+    "I am honestly so furious about what happened today that I can barely think straight.",
+    "so mad today"
+   ]
+  },
+  {
+   "id": "sick",
+   "acceptable": [],
+   "messages": [
+    "caught a nasty flu, been in bed all day",
+    "my throat is sore and my head is pounding",
+    "I think I'm coming down with something",
+    "been coughing and sneezing since yesterday",
+    "im sick as a dog today man",
+    "got a feverr and cant get out of bed",
+    "eish bru, this flu is klapping me hard",
+    "ag man I'm properly siek today, snot en trane",
+    "Unfortunately I've come down with a horrible cold this week and I'm feeling absolutely miserable.",
+    "got the flu"
+   ]
+  },
+  {
+   "id": "heartbreak",
+   "acceptable": [
+    "sad"
+   ],
+   "messages": [
+    "my girlfriend left me last night",
+    "she ended things with me yesterday",
+    "my boyfriend ended it out of nowhere",
+    "we broke up after three years, I'm a mess",
+    "got dumped over text can you believe it",
+    "he dumpd me for someone else",
+    "eish bru my cherrie left me",
+    "yoh, my heart is in pieces hey, she chose someone else",
+    "I'm sorry to unload on you, but my partner of five years just ended our relationship and I don't know how to cope.",
+    "she dumped me"
+   ]
+  },
+  {
+   "id": "happy",
+   "acceptable": [],
+   "messages": [
+    "something amazing just happened to me",
+    "I'm over the moon today, everything went right",
+    "best day of my life, I can't stop smiling",
+    "we're celebrating tonight, things finally worked out",
+    "im buzzing rn everything is going my way",
+    "i passd my driving test im so happy",
+    "yoh bru today was lekker, everything just came together",
+    "aweh! got the best news of my life today",
+    "You'll never believe it — I just received the most marvellous news and I simply had to tell someone!",
+    "great day today!"
+   ]
+  },
+  {
+   "id": "bored",
+   "acceptable": [],
+   "messages": [
+    "so bored right now, someone save me",
+    "this day is dragging on forever, zero to do",
+    "ugh, absolutely nothing going on here today",
+    "I'm bored out of my mind over here",
+    "sooo boredddd rn",
+    "im bord and everyone else is asleep",
+    "eish bru, dead quiet here, nothing lekker to do",
+    "ag man this dorpie is so dull on Sundays, dying of boredom",
+    "Forgive me for saying so, but I'm terribly bored this afternoon and thought I would come and chat to pass the time.",
+    "bored stiff here"
+   ]
+  },
+  {
+   "id": "userwork",
+   "acceptable": [
+    "stress"
+   ],
+   "messages": [
+    "work has been absolutely hectic lately",
+    "my manager keeps piling more onto my plate",
+    "deadlines stacked up at the office this week",
+    "honestly thinking about quitting my job",
+    "wrk is killing me these days",
+    "so many meetings today i cant breathe at the office",
+    "eish, my werk is chaos and the boss is on my case nonstop",
+    "yoh bru, the graft never ends at this job hey",
+    "My apologies for venting, but my workload has become quite unmanageable and my supervisor is not the sympathetic type.",
+    "job stress again"
+   ]
+  },
+  {
+   "id": "school",
+   "acceptable": [],
+   "messages": [
+    "I've got a big maths test on Friday",
+    "finals are next week and I haven't started revising",
+    "school has been rough this term, so many assignments",
+    "so much homework tonight, I'll never finish",
+    "cramming for my biology exam rn wish me luck",
+    "i hav a huge test tomorow and im not ready",
+    "eish bru, matric exams are klapping me this year",
+    "my teacher loaded us with swot work for the June exams, yoh",
+    "Would you mind wishing me luck? I'm preparing for my university entrance examinations and it's rather daunting.",
+    "big exam tomorrow"
+   ]
+  },
+  {
+   "id": "money",
+   "acceptable": [],
+   "messages": [
+    "my bank account is looking very sad right now",
+    "everything costs a fortune these days",
+    "the petrol price is eating my whole salary",
+    "I can't pay my rent this month",
+    "im so brok till payday",
+    "no cash left and its only the 15th",
+    "eish bru I'm platsak till month end",
+    "yoh everything is so duur these days, my wallet is crying",
+    "I do apologise for moaning, but finances are extremely tight for me at the moment and it's weighing on me.",
+    "totally broke again"
+   ]
+  },
+  {
+   "id": "sport",
+   "acceptable": [],
+   "messages": [
+    "did you catch the Boks game on Saturday",
+    "who do you think will win the world cup",
+    "the Proteas collapsed again in the cricket yesterday",
+    "I'm off to watch the football with my mates tonight",
+    "do u follow the premier league at all",
+    "rugbi world cup is coming whos ur team",
+    "howzit, you reckon the Bokke will klap the All Blacks?",
+    "the Sharks got moered by the Stormers on Saturday hey",
+    "May I ask whether you follow any sports out there, perhaps the cricket or the rugby?",
+    "watch the cricket?"
+   ]
+  },
+  {
+   "id": "music",
+   "acceptable": [],
+   "messages": [
+    "what kind of tunes are you into",
+    "been listening to amapiano all day, you know it?",
+    "who's your favourite band or artist",
+    "what songs do meerkats listen to out there",
+    "whats ur fav song rn",
+    "do u liek music",
+    "any lekker jams you vibe to on the dunes bru?",
+    "howzit, you more into kwaito or sokkie treffers?",
+    "I'm curious whether you have any musical preferences — a genre or an artist you particularly enjoy?",
+    "music taste?"
+   ]
+  },
+  {
+   "id": "movies",
+   "acceptable": [],
+   "messages": [
+    "seen any good films lately",
+    "what should I binge on netflix tonight",
+    "I watched a brilliant series last night",
+    "do meerkats have a favourite film genre",
+    "watchd any gud movies latly",
+    "im rewatching lord of the rings for the 5th time",
+    "howzit bru, any flicks you'd recommend for tonight?",
+    "we're doing a fliek and popcorn evening, what must we watch?",
+    "I was wondering whether you ever get to see any television or cinema out there in the desert?",
+    "recommend a movie"
+   ]
+  },
+  {
+   "id": "userfood",
+   "acceptable": [
+    "eats"
+   ],
+   "messages": [
+    "no idea what to make for supper tonight",
+    "I'm starving, haven't eaten since breakfast",
+    "thinking of ordering a pizza tonight",
+    "what should I cook for everyone this evening",
+    "so hungray rn what do i eat",
+    "cant decide what to eat tonite",
+    "having a braai on Saturday, wors and tjops on the fire",
+    "lus for a boerie roll right now hey",
+    "Might you have a suggestion for what I could prepare for dinner this evening? I'm rather peckish.",
+    "dinner ideas?"
+   ]
+  },
+  {
+   "id": "danger",
+   "acceptable": [],
+   "messages": [
+    "there's a snake in my garden, what do I do",
+    "careful, I think I saw an eagle circling above you",
+    "it feels really unsafe walking home in the dark",
+    "heads up, something big is moving in the bushes near you",
+    "i think somethings prowling outside and im scared",
+    "ther is a big hawk circling abov ur mound!!",
+    "pasop! something's creeping through the grass by your mound",
+    "yoh bru be careful tonight, full moon means the hunters are out hey",
+    "Please do be careful up there — I hear there are some rather dangerous animals prowling about at night.",
+    "look out, hawk!"
+   ]
+  },
+  {
+   "id": "travel",
+   "acceptable": [],
+   "messages": [
+    "thinking of taking a trip to the Kgalagadi, worth it?",
+    "any good spots for a getaway in South Africa?",
+    "I'm planning a safari next year, where should I go?",
+    "is the Kalahari nice to visit this time of year?",
+    "wanna go on vacay somewhere new any ideas",
+    "planing a trip to the desert wher should i stay",
+    "thinking of a jol out to the bush, where must I go, bru?",
+    "we're keen for a klein vakansie, is the Kgalagadi lekker?",
+    "Good day Tsamma, I'm hoping to plan a wildlife holiday in South Africa next year. Would you recommend the Kalahari as a destination?",
+    "holiday ideas?"
+   ]
+  },
+  {
+   "id": "pets",
+   "acceptable": [],
+   "messages": [
+    "I've got two cats, would you be scared of them?",
+    "my puppy chewed my shoes again today",
+    "do meerkats get along with dogs?",
+    "we just adopted a kitten, she's so cute",
+    "i hav a golden retriever hes my best buddy",
+    "got a hamster at home do u count that as prey",
+    "my brak keeps barking at the hadedas, bru",
+    "ag man, my hond dug up the whole garden again",
+    "Hello Tsamma, I'd like to introduce my pet parrot, Charlie. He chats nearly as much as you do. Do meerkats ever keep pets?",
+    "got a new puppy"
+   ]
+  },
+  {
+   "id": "humans",
+   "acceptable": [
+    "opinion"
+   ],
+   "messages": [
+    "be honest, what's your take on us humans?",
+    "do meerkats like people or are we scary?",
+    "are humans annoying to you?",
+    "what does the mob think when tourists show up?",
+    "honestly wat do u meerkats make of us humans",
+    "do u trust humans or not rly",
+    "what do you reckon about us two-leg okes, bru?",
+    "eish, do meerkats even rate us humans or nah?",
+    "From your vantage point up on that mound, Tsamma, what is your honest assessment of the human species?",
+    "thoughts on humans?"
+   ]
+  },
+  {
+   "id": "deep",
+   "acceptable": [],
+   "messages": [
+    "what's it all for, do you ever wonder?",
+    "does life have a purpose, you reckon?",
+    "sometimes I wonder why any of us exist",
+    "what makes a life worth living?",
+    "wats the actual point of life man",
+    "do u ever think about why we exist",
+    "bru, what's the meaning of this whole lewe?",
+    "ag man, why are we all even here, hey?",
+    "Tsamma, may I ask something philosophical? What do you believe gives life its meaning, out there in the desert?",
+    "why do we exist"
+   ]
+  },
+  {
+   "id": "decide",
+   "acceptable": [
+    "advice",
+    "opinion"
+   ],
+   "messages": [
+    "I'm stuck between two options, pick one for me",
+    "can't make up my mind, should I take the offer or not?",
+    "flip a coin for me, do I go or stay?",
+    "torn between two choices here, what's your call?",
+    "cant decide if i shud buy it or not",
+    "help me pick between the two plz",
+    "ja-nee, must I do it or must I los it, bru?",
+    "eish, I'm sitting on the fence, choose for me boet",
+    "Tsamma, I have a decision weighing on me and I keep flip-flopping. Could you help me settle on a final yes or a no?",
+    "decide for me"
+   ]
+  },
+  {
+   "id": "opinion",
+   "acceptable": [
+    "advice",
+    "decide"
+   ],
+   "messages": [
+    "so what's your take on all this?",
+    "give me your honest view on it",
+    "I'm curious what you make of that",
+    "where do you stand on this one?",
+    "wat do u think abt it tho",
+    "gimme ur 2 cents on this",
+    "ag tell me straight, what do you reckon, boet?",
+    "no man, just gooi your opinion, bru",
+    "Before I make up my mind, Tsamma, I would genuinely value your perspective on the matter. What is your view?",
+    "your thoughts?"
+   ]
+  },
+  {
+   "id": "sleep",
+   "acceptable": [],
+   "messages": [
+    "where do you actually sleep at night?",
+    "what time do meerkats get up in the morning?",
+    "walk me through a normal day for you",
+    "do you all sleep in the burrow together?",
+    "wat time do u go to bed",
+    "do meerkats nap during the day or wat",
+    "when do you wake up, bru? crack of dawn?",
+    "what's your daily grind like on the dunes, boet?",
+    "I'm curious about meerkat life, Tsamma. What does a typical day and night look like for you? Do you sleep underground?",
+    "sleep schedule?"
+   ]
+  },
+  {
+   "id": "now",
+   "acceptable": [],
+   "messages": [
+    "so what are you busy with at the moment?",
+    "what are you up to over there?",
+    "whatcha doing at this very second?",
+    "busy with anything at the moment?",
+    "wat u doin rn",
+    "wyd right now lol",
+    "what you up to right now, boet?",
+    "wat maak jy now, my bru?",
+    "Tell me, Tsamma, at this exact moment, what is keeping you busy up there on the mound?",
+    "whatcha up to"
+   ]
+  },
+  {
+   "id": "userfamily",
+   "acceptable": [],
+   "messages": [
+    "my daughter won't listen to a word I say",
+    "had a big argument with my mom last night",
+    "my son starts big school next week, time flies",
+    "my whole family is staying with us this month",
+    "my kids wont stop fighting with each othr",
+    "me and my sister arent talking anymore",
+    "yoh, my broer borrowed my bakkie and dented it",
+    "eish, big family drama at ouma's house again",
+    "Tsamma, can I vent for a moment? My father and I have not been seeing eye to eye lately and family dinners have become quite tense.",
+    "my parents are fighting"
+   ]
+  },
+  {
+   "id": "friendtrouble",
+   "acceptable": [],
+   "messages": [
+    "my best mate isn't speaking to me anymore",
+    "I said something I regret and now my friend is cross with me",
+    "me and my buddy had a huge falling out",
+    "my friend cancelled on me again, third time this month",
+    "my freind ghosted me idk what i did",
+    "fought with my bestie last nite feel bad",
+    "my china's the moer in with me, bru",
+    "eish, big fallout with my chommie this week",
+    "Tsamma, I could use some sentry wisdom. One of my closest friends misunderstood something I said and now there is real tension between us.",
+    "my friend hates me"
+   ]
+  },
+  {
+   "id": "weekend",
+   "acceptable": [],
+   "messages": [
+    "got anything fun lined up for Saturday?",
+    "doing anything nice this weekend?",
+    "what does the mob get up to on weekends?",
+    "any big weekend plans out there on the dunes?",
+    "wat u doing this wknd",
+    "any plans for sat and sun",
+    "what's the plan for the naweek, bru?",
+    "lekker weekend coming up, what you gonna do?",
+    "I was wondering, Tsamma, do meerkats have weekends at all? What will you get up to when Saturday rolls around?",
+    "weekend plans?"
+   ]
+  },
+  {
+   "id": "tech",
+   "acceptable": [],
+   "messages": [
+    "how do you feel about smartphones and all that?",
+    "do meerkats know what wifi is?",
+    "what do you make of the internet then?",
+    "everyone's glued to their phones these days hey",
+    "do u even hav signal in the desert lol",
+    "my laptop keeps crashing im so done with technology",
+    "do you skinner on WhatsApp with the mob, bru?",
+    "eish, load shedding killed my wifi again",
+    "Tsamma, I'm curious how a meerkat regards modern technology. Do computers and phones ever reach your part of the Kalahari?",
+    "you got wifi?"
+   ]
+  }
+ ],
+ "ood": [
+  "What's the capital of Mongolia?",
+  "Who wrote Pride and Prejudice?",
+  "When did the Berlin Wall come down?",
+  "How far away is the moon in kilometres?",
+  "What's the chemical symbol for tungsten?",
+  "Explain photosynthesis to me",
+  "How many bones are in an adult skeleton?",
+  "Who painted the Sistine Chapel ceiling?",
+  "What year did the Titanic sink?",
+  "Which planet has the most moons?",
+  "What causes tides?",
+  "Name the longest river in Europe",
+  "What's the boiling point of water at altitude?",
+  "Who discovered penicillin?",
+  "How do magnets work?",
+  "What's the difference between a virus and a bacterium?",
+  "When was the printing press invented?",
+  "What is the tallest building in the world?",
+  "what is 17*23",
+  "What's 15% of 240?",
+  "square root of 1764?",
+  "Solve for x: 3x + 7 = 25",
+  "Convert 98.6 Fahrenheit to Celsius",
+  "What's 7 factorial?",
+  "1024 divided by 16?",
+  "Is 221 a prime number?",
+  "What's a third of 750?",
+  "If a car drives 90 km/h for 2.5 hours, how far does it get?",
+  "What is 2 to the power of 20?",
+  "Round 3.14159 to 3 decimal places",
+  "What's 999 plus 1001?",
+  "write me a python script that renames all my files to lowercase",
+  "my wifi keeps dropping every few minutes",
+  "How do I reset my router?",
+  "my laptop won't turn on at all",
+  "Can you write an SQL query to find duplicate rows?",
+  "What does this error mean: TypeError: undefined is not a function",
+  "my printer says paper jam but there's no paper jam",
+  "How do I recover a deleted file in Windows?",
+  "Fix this regex for me: ^[a-z]+@",
+  "my email won't sync on my tablet",
+  "What's the difference between RAM and storage?",
+  "Write a bash one-liner to count lines in all csv files",
+  "my screen froze and now it's just flickering",
+  "How do I make a pivot table in Excel?",
+  "Who is the current president of France?",
+  "Who won the last US election?",
+  "What's the latest on the interest rate decision?",
+  "What is the price of bitcoin today?",
+  "What was decided at the climate summit this year?",
+  "When is the next general election in the UK?",
+  "What's the rand doing against the dollar today?",
+  "Did parliament pass that new tax bill?",
+  "Who is the secretary-general of the UN right now?",
+  "What are the current petrol prices?",
+  "Has the ceasefire held this week?",
+  "Which party won the municipal by-election?",
+  "Is the president giving a speech tonight?",
+  "set a timer for 10 minutes",
+  "order me a large pepperoni pizza",
+  "Remind me to take the washing in at 5",
+  "add milk and bread to my shopping list",
+  "turn off the lounge lights",
+  "Send an email to my accountant saying I'll be late",
+  "book me a table for two at 7 tonight",
+  "get me an uber to the airport",
+  "set an alarm for 6am tomorrow",
+  "Print this page for me",
+  "check if my parcel has been delivered yet",
+  "Switch the kettle on",
+  "pay my electricity bill for me",
+  "Open Google Maps and find the nearest pharmacy",
+  "Où est la gare la plus proche ?",
+  "J'ai perdu mes clés ce matin",
+  "Quelle heure est-il à Paris ?",
+  "Wo ist der nächste Bahnhof?",
+  "Mein Zug hat schon wieder Verspätung",
+  "Kannst du das für mich übersetzen?",
+  "¿Dónde está la biblioteca?",
+  "Mi tren sale a las ocho de la mañana",
+  "¿Cuánto cuesta un billete a Madrid?",
+  "Ich habe meinen Regenschirm im Bus vergessen",
+  "asdfghjkl",
+  "qwerty uiop zxcvb",
+  "kjfdgkjh sdfkjh weriu",
+  "aaaaaaaaaaaaa",
+  "lorem ipsum dolor sit amet",
+  "8fj3n2 9dk1 zzp",
+  "blorp wizzlegang frumt",
+  "nfjkdsnfkjdsnfkjds",
+  "hnnnggggg",
+  "asdkjasdkjasd 123 kjasd",
+  "ppppppppppppppp",
+  "xkcd vbnm qqqq",
+  "?",
+  "...",
+  "!!!",
+  "🙃",
+  "🚀",
+  "🥔",
+  "🦖",
+  ":)",
+  "???",
+  ".",
+  "my neighbour's parrot escaped again",
+  "I finally fixed the squeaky gate at home",
+  "the lift in our building is stuck between floors again",
+  "I planted tomatoes in June, probably a mistake",
+  "my landlord wants to inspect the flat on Tuesday",
+  "I dropped my glasses behind the fridge and now I can't reach them",
+  "load shedding cut us off right in the middle of my video call",
+  "our street got speed bumps overnight without any warning",
+  "I knitted a scarf but it came out three metres long",
+  "the wheelie bin blew over and now there's rubbish all over the driveway",
+  "my houseplant grew a second stem overnight",
+  "I got a splinter from the new deck chairs",
+  "the municipality dug up our pavement and just left",
+  "I taught myself to juggle three oranges this morning",
+  "there's a wasp nest forming under my carport",
+  "my dentist appointment got moved for the third time"
+ ],
+ "reactive": {
+  "reactiveAnswers": [
+   "lekker thanks, quiet day",
+   "ja good hey, can't complain",
+   "pretty good actually",
+   "good thanks, and you?",
+   "lekker man, sun is out and all",
+   "great day, got loads done",
+   "not bad at all hey",
+   "really good, best week in ages",
+   "ja all good my side",
+   "sharp sharp, all good here",
+   "going well so far",
+   "happy today, no big reason",
+   "awesome, just got paid",
+   "good good, had a nice walk this morning",
+   "lekker, chilled at home all day",
+   "ag not great hey",
+   "eish, been a rough one",
+   "honestly terrible",
+   "not so lekker today",
+   "bit of a hectic day hey",
+   "tired hey, long week",
+   "meh, could be better",
+   "stressful, deadlines everywhere",
+   "not great, argued with my sister",
+   "rubbish day, everything went wrong",
+   "bleak hey",
+   "shame, feeling a bit down today",
+   "hectic, no time to breathe",
+   "bit sad today, don't know why",
+   "worried about work stuff to be honest",
+   "not much really",
+   "same old same old",
+   "nothing to report this side",
+   "can't complain, can't celebrate",
+   "just another day",
+   "dunno, fine I guess",
+   "ok I suppose",
+   "nothing much hey",
+   "quiet day, nothing happening",
+   "so so",
+   "average hey",
+   "fine",
+   "alright I guess",
+   "no news my side, you?",
+   "busy day, two meetings and a flat tyre",
+   "long day, traffic on the N1 was mad",
+   "loadshedding all afternoon so not much got done",
+   "wrote my last exam today so big relief",
+   "spent the morning in the garden, lekker weather",
+   "had a braai with the cousins, good vibes",
+   "worked a double shift, my feet are finished",
+   "took the dog to the vet, all fine luckily",
+   "kids were home all day so total chaos",
+   "watched the game, we lost, so ja",
+   "did a big shop and now I'm broke",
+   "rained all day so I stayed inside",
+   "better than yesterday at least",
+   "okay now, was upset earlier but it passed",
+   "still thinking about it hey, bit anxious",
+   "much better now thanks"
+  ],
+  "continuations": [
+   "why",
+   "why?",
+   "how come",
+   "really?",
+   "realy?",
+   "no ways",
+   "no waysss",
+   "and then?",
+   "and then",
+   "another one",
+   "more please",
+   "go on",
+   "carry on",
+   "lol",
+   "lmao",
+   "haha nice",
+   "hahaha",
+   "serious?",
+   "srsly?",
+   "ok",
+   "okay cool",
+   "sharp",
+   "shap",
+   "is it?",
+   "tell me more",
+   "then what"
+  ],
+  "smalltalk": [
+   {
+    "t": "just got back from gym",
+    "acceptable": []
+   },
+   {
+    "t": "watching the cricket with my dad",
+    "acceptable": [
+     "sport",
+     "userfamily"
+    ]
+   },
+   {
+    "t": "my boss is on my case again",
+    "acceptable": [
+     "userwork"
+    ]
+   },
+   {
+    "t": "we're braaiing tonight",
+    "acceptable": [
+     "userfood"
+    ]
+   },
+   {
+    "t": "I've got exams next week",
+    "acceptable": [
+     "school"
+    ]
+   },
+   {
+    "t": "my dog chewed my shoe this morning",
+    "acceptable": [
+     "pets"
+    ]
+   },
+   {
+    "t": "I'm off to Cape Town for the long weekend",
+    "acceptable": [
+     "travel",
+     "weekend"
+    ]
+   },
+   {
+    "t": "I can't sleep lately",
+    "acceptable": [
+     "tired"
+    ]
+   },
+   {
+    "t": "it's pouring with rain here",
+    "acceptable": [
+     "weather"
+    ]
+   },
+   {
+    "t": "I'm so broke this month",
+    "acceptable": [
+     "money"
+    ]
+   },
+   {
+    "t": "my sister is getting married in December",
+    "acceptable": [
+     "userfamily",
+     "happy"
+    ]
+   },
+   {
+    "t": "I started a new job on Monday",
+    "acceptable": [
+     "userwork",
+     "happy"
+    ]
+   },
+   {
+    "t": "I'm learning guitar at the moment",
+    "acceptable": [
+     "music"
+    ]
+   },
+   {
+    "t": "we watched a movie last night",
+    "acceptable": [
+     "movies"
+    ]
+   },
+   {
+    "t": "my best friend isn't talking to me",
+    "acceptable": [
+     "friendtrouble"
+    ]
+   },
+   {
+    "t": "I've got flu, been in bed all day",
+    "acceptable": [
+     "sick"
+    ]
+   },
+   {
+    "t": "my kids won't do their homework",
+    "acceptable": [
+     "userfamily",
+     "school"
+    ]
+   },
+   {
+    "t": "I'm thinking of getting a cat",
+    "acceptable": [
+     "pets"
+    ]
+   },
+   {
+    "t": "the Boks play on Saturday",
+    "acceptable": [
+     "sport"
+    ]
+   },
+   {
+    "t": "I just finished a big project at work",
+    "acceptable": [
+     "userwork",
+     "happy"
+    ]
+   },
+   {
+    "t": "my mom's coming to visit this weekend",
+    "acceptable": [
+     "userfamily",
+     "weekend"
+    ]
+   },
+   {
+    "t": "I'm making bobotie for supper",
+    "acceptable": [
+     "userfood"
+    ]
+   },
+   {
+    "t": "I went for a run before work",
+    "acceptable": []
+   },
+   {
+    "t": "my phone screen cracked today",
+    "acceptable": [
+     "tech"
+    ]
+   },
+   {
+    "t": "I'm stressed about a presentation tomorrow",
+    "acceptable": [
+     "stress",
+     "userwork"
+    ]
+   },
+   {
+    "t": "we're going to the Kruger in July",
+    "acceptable": [
+     "travel"
+    ]
+   },
+   {
+    "t": "I've been feeling a bit low lately",
+    "acceptable": [
+     "sad"
+    ]
+   },
+   {
+    "t": "I got a promotion today",
+    "acceptable": [
+     "happy",
+     "userwork"
+    ]
+   },
+   {
+    "t": "my brother borrowed my car and dented it",
+    "acceptable": [
+     "userfamily"
+    ]
+   },
+   {
+    "t": "I'm babysitting my niece tonight",
+    "acceptable": [
+     "userfamily"
+    ]
+   },
+   {
+    "t": "just had the best pizza of my life",
+    "acceptable": [
+     "userfood"
+    ]
+   },
+   {
+    "t": "I can't decide if I should take the new job",
+    "acceptable": [
+     "decide",
+     "advice",
+     "userwork"
+    ]
+   },
+   {
+    "t": "it's freezing in Joburg today",
+    "acceptable": [
+     "weather"
+    ]
+   },
+   {
+    "t": "I'm bored out of my mind at home",
+    "acceptable": [
+     "bored"
+    ]
+   },
+   {
+    "t": "my girlfriend and I had a fight",
+    "acceptable": [
+     "friendtrouble"
+    ]
+   },
+   {
+    "t": "my daughter starts big school next year",
+    "acceptable": [
+     "userfamily",
+     "school"
+    ]
+   },
+   {
+    "t": "I'm saving up for a new bakkie",
+    "acceptable": [
+     "money"
+    ]
+   },
+   {
+    "t": "I haven't spoken to anyone all week",
+    "acceptable": [
+     "lonely"
+    ]
+   },
+   {
+    "t": "I think there's a snake in my garden",
+    "acceptable": [
+     "danger"
+    ]
+   },
+   {
+    "t": "I got tickets to the rugby!",
+    "acceptable": [
+     "sport",
+     "happy"
+    ]
+   },
+   {
+    "t": "loadshedding hit us again tonight",
+    "acceptable": []
+   },
+   {
+    "t": "I'm getting a haircut tomorrow",
+    "acceptable": []
+   },
+   {
+    "t": "work has been hectic lately",
+    "acceptable": [
+     "userwork"
+    ]
+   },
+   {
+    "t": "I stayed up till 3am watching series",
+    "acceptable": [
+     "movies"
+    ]
+   }
+  ],
+  "namegive": [
+   "NAME",
+   "im NAME",
+   "I'm NAME",
+   "i am NAME",
+   "iam NAME",
+   "my name is NAME",
+   "my names NAME",
+   "my name NAME",
+   "call me NAME",
+   "you can call me NAME",
+   "its NAME",
+   "it's NAME",
+   "they call me NAME",
+   "everyone calls me NAME",
+   "the name's NAME",
+   "NAME, nice to meet you"
+  ]
+ }
+}
