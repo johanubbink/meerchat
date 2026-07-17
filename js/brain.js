@@ -17,7 +17,7 @@
 
 const VERSION = "v11";
 const mem = { name:null, turns:0, lastScen:null, moreIdx:0, pending:false,
-              topics:[], lastCb:0, history:[], awaitName:true };
+              topics:[], lastCb:0, history:[], awaitName:3 };
 
 function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
 function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
@@ -84,7 +84,7 @@ const SCEN = [
  dyn: () => mem.name
    ? pick([`You're ${mem.name}! A sentry never forgets — faces, names, suspicious bushes. All filed up here.`,
            `${mem.name}, of course. Logged in the sentry report the moment you told me.`])
-   : (mem.awaitName = true,
+   : (mem.awaitName = 2,
       pick(["Eish, that's the thing — you never told me! Come, out with it: what do they call you?",
             "You know what, I've been too polite to admit I don't actually know. So tell me — what's your name?"])),
  a:["Eish, you never told me! What do they call you?"]},
@@ -773,7 +773,7 @@ function useScen(sc){
       && !/\?\s*$/.test(r) && Math.random()<0.4){
     r += " " + fill(bagPick("recip", RECIP_TAILS));
     mem.pending = true;
-    if (sc.id==="name") mem.awaitName = true;   // bare-name reply gets captured
+    if (sc.id==="name") mem.awaitName = 2;   // bare-name reply gets captured
   }
   return r;
 }
@@ -801,19 +801,39 @@ async function pickReplyInner(raw){
   for (const sc of SCEN)
     if (sc.re && sc.re.test(text)) { lastUserMsg = text; mem.lastRoute = "regex:"+sc.id; return useScen(sc); }
 
-  // 1.5 she asked their name: a short, non-question reply that doesn't
-  //     route anywhere else IS the name
+  // 1.5 she asked their name (opening line / "what do they call you?").
+  //     Real users often greet or chat a bit before answering, so the
+  //     window spans a few turns (awaitName counts them down). A word is
+  //     only taken as a name when it doesn't route anywhere else AND is
+  //     outside the brain's own vocabulary — "Thabo" passes, "busy" fails.
   if (mem.awaitName && !mem.name && !/\?/.test(text)){
-    mem.awaitName = false;                       // one-turn window only
-    const nm = text.replace(/[.!,]+/g," ").trim()
-      .match(/^(?:i'?m |it'?s |name'?s |they call me )?([a-z][a-z'-]+)(?: [a-z'-]+)?$/i);
-    const NOTNAMES = /^(hi|hello|hey|howzit|aweh|hoezit|yo|ja|yebo|yes|no|nope|ok|okay|fine|good|great|lekker|sharp|cool|nothing|nobody|dunno|guess|sup|nee|eish|shame|thanks|please|maybe|sure|version|bye|why|what|who|how|help|test|testing)$/i;
+    mem.awaitName--;
+    /* strip courtesy wrappers ("hi ...", "..., nice to meet you") before
+       matching, so the name itself is what's left */
+    const core = text.replace(/[.!,]+/g," ").replace(/\s+/g," ").trim()
+      .replace(/^(hi|hello|hey|howzit|aweh|heita|yo) /i, "")
+      .replace(/ (nice|good|lekker) to meet (you|u)$/i, "");
+    const nm = core
+      .match(/^((?:the )?name'?s |everyone calls me |they call me |people call me |(?:you can )?call me |my name is |my name'?s |my name |i'?m |i am |iam |it'?s |its )?([a-z][a-z'-]+)( [a-z'-]+)?$/i);
+    const NOTNAMES = /^(hi|hello|hey|howzit|aweh|hoezit|heita|dumela|molo|yo|ja|yebo|yes|no|nope|ok|okay|fine|good|great|lekker|sharp|shap|cool|nothing|nobody|dunno|guess|sup|nee|eish|shame|thanks|thanx|please|maybe|sure|version|bye|why|what|who|how|help|test|testing|lol|lmao|meh|yoh|sjoe|serious|srsly|really|realy|haha\w*|hmm\w*|same|average|alright|busy|tired|hungry|bored|sick|sad|happy|angry|stressed|wyd|rn)$/i;
+    /* out-of-vocabulary test: none of the prototype sentences contain the
+       word, so it can't be an on-topic message — likely a proper name */
+    const inVocab = (w) => { const tk = toks(w); return !tk.length || DF[tk[0]] !== undefined; };
+    const hasPrefix = !!(nm && nm[1]);
+    const word = nm ? nm[2] : null;
+    /* bare captures must be a single word; prefixed ones ("i'm Sannie de
+       Wet") may carry a surname — both need an out-of-vocabulary name */
+    const shapeOk = nm && (hasPrefix || !nm[3]);
     // judge the bare word on its own — no previous-message context boost,
     // otherwise "version" -> "Johan" scores as the version topic again
     const tk0 = nm ? toks(text) : [];
     const fh = tk0.length ? bestMatch(vecOf(tk0), VECS) : null;
-    if (nm && !NOTNAMES.test(nm[1]) && !keywordHit(t) && !(fh && fh.score >= TH.strong)){
-      mem.name = capitalize(nm[1]);
+    /* an explicit prefix ("call me...", "my name...") is a clear signal:
+       skip the routing checks that only guard bare-word captures */
+    if (shapeOk && !NOTNAMES.test(word) && !inVocab(word)
+        && (hasPrefix || (!keywordHit(t) && !(fh && fh.score >= TH.strong)))){
+      mem.name = capitalize(word);
+      mem.awaitName = 0;
       lastUserMsg = text;
       const r = pick([`${mem.name}! Lekker to meet you properly. Sentries never forget a face — or a name. So what's your ${tod()} looking like, ${mem.name}?`,
                       `Aweh, ${mem.name}! Welcome to the mound. Now we're proper chinas. What's news your side?`]);
@@ -821,11 +841,11 @@ async function pickReplyInner(raw){
       mem.lastRoute = "namecapture";
       return r;
     }
-  } else if (mem.awaitName && mem.name) mem.awaitName = false;
+  } else if (mem.awaitName && mem.name) mem.awaitName = 0;
 
   // 2. name capture must run before generic ELIZA
   const nameM = text.match(ELIZA[0][0]);
-  if (nameM) { lastUserMsg = text; mem.pending = false; mem.awaitName = false; mem.lastRoute = "eliza:name"; return ELIZA[0][1](nameM); }
+  if (nameM) { lastUserMsg = text; mem.pending = false; mem.awaitName = 0; mem.lastRoute = "eliza:name"; return ELIZA[0][1](nameM); }
 
   // 3. strong classical fuzzy match beats everything else
   const hit = fuzzyHit(text);
