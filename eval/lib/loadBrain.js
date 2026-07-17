@@ -33,8 +33,9 @@ let compiled = null;
 function compile() {
   const src =
     fs.readFileSync(path.join(ROOT, "js/data/responses.js"), "utf8") +
+    fs.readFileSync(path.join(ROOT, "js/data/protos.js"), "utf8") +
     fs.readFileSync(path.join(ROOT, "js/brain.js"), "utf8") +
-    ';__exports = { pickReply, mem, SCEN, PROTO, toks, fuzzyHit, TH };';
+    ';__exports = { pickReply, mem, SCEN, PROTO, toks, fuzzyHit, TH, tune };';
   compiled = new vm.Script(src, { filename: "brain-under-test.js" });
   return compiled;
 }
@@ -49,6 +50,11 @@ function loadBrain(seed) {
   };
   vm.createContext(ctx);
   compiled.runInContext(ctx);
+  /* optional threshold tuning, e.g. MEER_TUNE="0.55,0.4" (strong,weak) */
+  if (process.env.MEER_TUNE) {
+    const [s, k] = process.env.MEER_TUNE.split(",").map(Number);
+    ctx.__exports.tune(s, k);
+  }
   return ctx.__exports;
 }
 

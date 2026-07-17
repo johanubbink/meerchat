@@ -12,6 +12,7 @@ index.html          shell: markup + script tags, loaded in order
 css/style.css       all styling (desert theme, chat bubbles, input bar)
 js/data/frames.js   ASCII-art animation frames (F)
 js/data/responses.js  1000-line generic fallback pool (R), tagged by category
+js/data/protos.js   extra prototype sentences + keywords per scenario (data)
 js/brain.js         all chat logic, no DOM access (testable in Node)
 js/ui.js            DOM wiring: animation loop, art scaling, chat bubbles
 ```

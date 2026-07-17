@@ -78,7 +78,7 @@ const SCEN = [
     "Tsamma's the name, sentry duty's the game. Head lookout of the Duinbos mob.",
     "Tsamma. One name, like all the greats. Named for the melon that once saved the whole mob."]},
 
-{id:"myname", re:/what('?s| is) my name|do you (know|remember) my name|say my name\b|who am i\b/i,
+{id:"myname", re:/what('?s| is) my name|do you (know|remember) my name|say my name\b|who am i\b|what am i called|you know who i am/i,
  protos:["what is my name","do you know my name, do you remember what I am called"],
  kw:["my name","who am i"],
  dyn: () => mem.name
@@ -701,6 +701,16 @@ const R_CHAT = R.filter(x => x.c === "chat");
    removal and light suffix stemming. No downloads, no network, instant
    startup. Tune with __meer.probe("your test phrase") in the console. */
 
+/* supplementary coverage data (js/data/protos.js), kept out of the logic
+   file: extra prototype sentences and keywords per scenario */
+if (typeof PROTO_EXTRA !== "undefined")
+  SCEN.forEach(sc => {
+    const x = PROTO_EXTRA[sc.id];
+    if (!x) return;
+    if (x.protos) sc.protos.push(...x.protos);
+    if (x.kw) { sc.kw = sc.kw || []; sc.kw.push(...x.kw); }
+  });
+
 const PROTO = [];
 SCEN.forEach((sc, si) => sc.protos.forEach(t => PROTO.push({ si, t })));
 
@@ -770,23 +780,61 @@ function vecOf(tokens){
 }
 const VECS = PTOKS.map(vecOf);
 function cos(a,b){ let s=0; for(const w in a) if(b[w]!==undefined) s+=a[w]*b[w]; return s; }
+
+/* ---- typo bridge ----
+   Query tokens outside the prototype vocabulary get mapped to the closest
+   vocabulary word by character-bigram Dice similarity ("wher" -> "where"),
+   classic spell correction. Word-level TF-IDF stays the only score, so the
+   clean zero-similarity baseline for unrelated text is preserved. */
+function grams2(w){
+  const s = "\u0002" + w + "\u0003"; const g = [];
+  for (let i = 0; i < s.length-1; i++) g.push(s.slice(i, i+2));
+  return g;
+}
+let VGRAMS = null; /* built lazily after DF is complete */
+const OOVCACHE = new Map();
+function nearestVocab(w){
+  if (w.length < 4) return w;
+  let hit = OOVCACHE.get(w);
+  if (hit !== undefined) return hit;
+  if (!VGRAMS) VGRAMS = Object.keys(DF).map(v => [v, new Set(grams2(v))]);
+  const g = grams2(w);
+  let best = w, bs = 0.72; /* strict: only clear near-misses map over */
+  for (const [v, vg] of VGRAMS){
+    if (Math.abs(v.length - w.length) > 2) continue;
+    let inter = 0;
+    for (const x of g) if (vg.has(x)) inter++;
+    const dice = 2*inter / (g.length + vg.size);
+    if (dice > bs){ bs = dice; best = v; }
+  }
+  OOVCACHE.set(w, best);
+  return best;
+}
 function bestMatch(qv, vecs){
   let bi=-1, bs=-1;
   for(let i=0;i<vecs.length;i++){ const s=cos(qv,vecs[i]); if(s>bs){bs=s;bi=i;} }
   return bi<0 ? null : { sc: SCEN[PROTO[bi].si], score: bs };
 }
-/* thresholds calibrated on a 40-utterance paraphrase/noise test set */
-let TH = { strong:0.55, weak:0.40 };
+/* query-side tokenization with typo correction */
+function qtoks(s){
+  return toks(s).map(w => DF[w] !== undefined ? w : nearestVocab(w));
+}
+function bestCombined(text){
+  const tk = qtoks(text);
+  return tk.length ? bestMatch(vecOf(tk), VECS) : null;
+}
+/* thresholds calibrated on the eval harness (eval/run.js, 100x100) */
+let TH = { strong:0.58, weak:0.42 };
 let lastUserMsg = "";
 function fuzzyHit(text){
-  const tk = toks(text);
-  const raw = tk.length ? bestMatch(vecOf(tk), VECS) : null;
+  const raw = bestCombined(text);
   if (raw && raw.score >= TH.weak) return raw;
   // context boost: a very short message that matches nothing on its own
   // gets judged together with the previous message
-  if (text.split(/\s+/).length<=3 && lastUserMsg){
-    const btk = toks(lastUserMsg+" "+text);
-    if (btk.length) return bestMatch(vecOf(btk), VECS);
+  if (text.split(/\s+/).length<=3 && lastUserMsg
+      && qtoks(text).some(w => DF[w] !== undefined)){
+    const b = bestCombined(lastUserMsg+" "+text);
+    if (b) return b;
   }
   return raw;
 }
@@ -800,11 +848,34 @@ function probe(text){
 }
 const BRAIN_STATUS = "classical brain · "+SCEN.length+" scenarios · fully offline";
 
-function keywordHit(t){
-  let best=null, bestN=0;
+/* keyword matching on stem-normalized tokens: kw "raining" matches
+   "is it gona rain", token boundaries prevent "brain" matching "rain" */
+const KWNORM = new Map();
+function kwNorm(w){
+  let n = KWNORM.get(w);
+  if (n !== undefined) return n;
+  /* precision guard: stem-matching is only safe when normalization loses
+     nothing — "raining" -> "rain" is fine, but "what's up" -> "what" or
+     "should i" -> "i" would fire on half of all messages. Dropped words or
+     very short stems disable the stemmed path (exact substring still works). */
+  const words = w.split(/\s+/).filter(Boolean);
+  const tk = toks(w);
+  let ok = tk.length === words.length;
+  if (ok && tk.length === 1 && tk[0].length < 4) ok = false;
+  n = ok ? tk.join(" ") : "";
+  KWNORM.set(w, n);
+  return n;
+}
+function keywordHit(t, minN){
+  const tn = " " + qtoks(t).join(" ") + " ";
+  let best=null, bestN=(minN||1)-1;
   for(const sc of SCEN){
     if(!sc.kw) continue;
-    const n = sc.kw.reduce((a,w)=>a+(t.includes(" "+w+" ")?1:0),0);
+    const n = sc.kw.reduce((a,w)=>{
+      if (t.includes(" "+w+" ")) return a+1;
+      const k = kwNorm(w);
+      return a + (k && tn.includes(" "+k+" ") ? 1 : 0);
+    },0);
     if(n>bestN){ bestN=n; best=sc; }
   }
   return best;
@@ -882,8 +953,7 @@ async function pickReplyInner(raw){
     const shapeOk = nm && (hasPrefix || !nm[3]);
     // judge the bare word on its own — no previous-message context boost,
     // otherwise "version" -> "Johan" scores as the version topic again
-    const tk0 = nm ? toks(text) : [];
-    const fh = tk0.length ? bestMatch(vecOf(tk0), VECS) : null;
+    const fh = nm ? bestCombined(text) : null;
     /* an explicit prefix ("call me...", "my name...") is a clear signal:
        skip the routing checks that only guard bare-word captures */
     if (shapeOk && !NOTNAMES.test(word) && !inVocab(word)
@@ -903,12 +973,27 @@ async function pickReplyInner(raw){
   const nameM = text.match(ELIZA[0][0]);
   if (nameM) { lastUserMsg = text; mem.pending = false; mem.awaitName = 0; mem.lastRoute = "eliza:name"; return ELIZA[0][1](nameM); }
 
+  /* dialogue state: she just asked a question and this is not a question
+     back — the message is most likely an ANSWER. Answers still route to a
+     scenario on very confident evidence (an emotional disclosure, a clear
+     topic), but weak matches must not hijack them: "all good my side" is a
+     reply to "how are you?", not the user asking howru. */
+  const answering = mem.pending && !/\?/.test(text);
+  /* out-of-vocabulary question gate: a question whose content includes
+     words the brain has never seen ("magnets", "titanic") is about the
+     wider world — unless the match is very confident, honesty beats a
+     lookalike answer */
+  const isQ = /\?/.test(text) || /^(what|who|where|when|why|how|which|can|could|do|does|did|is|are|will|would|should)\b/i.test(text);
+  const qtk = qtoks(text);
+  const oov = qtk.filter(w => DF[w] === undefined).length;
+
   // 3. strong classical fuzzy match beats everything else
   const hit = fuzzyHit(text);
-  if (hit && hit.score >= TH.strong) { lastUserMsg = text; mem.lastRoute = "fuzzy-strong:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
+  const strongBar = TH.strong + (answering ? 0.1 : 0) + (isQ && oov ? 0.1 : 0);
+  if (hit && hit.score >= strongBar) { lastUserMsg = text; mem.lastRoute = "fuzzy-strong:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
 
   // 4. scenario keywords (before ELIZA so 'can you give me advice' finds advice)
-  const kh = keywordHit(t);
+  const kh = keywordHit(t, answering ? 2 : 1);
   if (kh) { lastUserMsg = text; mem.lastRoute = "keyword:"+kh.id; return useScen(kh); }
 
   // 5. ELIZA reflections, then weak fuzzy
@@ -916,7 +1001,7 @@ async function pickReplyInner(raw){
     const m = text.match(ELIZA[i][0]);
     if (m) { lastUserMsg = text; mem.pending = false; mem.lastRoute = "eliza:"+i; return ELIZA[i][1](m); }
   }
-  if (hit && hit.score >= TH.weak) { lastUserMsg = text; mem.lastRoute = "fuzzy-weak:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
+  if (!answering && !(isQ && oov) && hit && hit.score >= TH.weak) { lastUserMsg = text; mem.lastRoute = "fuzzy-weak:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
 
   // 6. she asked you something last turn: acknowledge the answer
   if (mem.pending){
@@ -981,5 +1066,9 @@ async function pickReply(raw){
   if (mem.history.length > 8) mem.history.shift();
   return r;
 }
+function tune(strong, weak){
+  if (strong !== undefined) TH.strong = strong;
+  if (weak !== undefined) TH.weak = weak;
+}
 if (typeof window !== "undefined")
-  window.__meer = { bestMatch, PROTO, SCEN, TH:()=>TH, probe, pickReply, mem, bags, toks, idf, fuzzyHit };
+  window.__meer = { bestMatch, bestCombined, PROTO, SCEN, TH:()=>TH, tune, probe, pickReply, mem, bags, toks, idf, fuzzyHit };
