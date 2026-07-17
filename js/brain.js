@@ -53,9 +53,12 @@ function bagPick(key, arr){
 function pickA(sc){ return fill(bagPick("a:"+sc.id, sc.a)); }
 
 /* ---- light memory: remember things the user brings up ---- */
+const NOTTOPICS = /^(hey|ja|ok|okay|man|bru|boet|china|né|ne|hê|yo|sharp|eish|sjoe|yoh|wow|lol|nice|cool|fine|good|great|lekker|really|serious|so)$/i;
 function remember(t){
-  t = t.trim().replace(/[.!?,]+$/,"").slice(0, 48);
-  if (t.split(/\s+/).length < 1 || t.length < 3) return;
+  t = t.trim().replace(/[.!?,]+$/,"")
+       .replace(/\s+(hey|né|ne|man|bru|boet|hê)$/i,"").slice(0, 48);
+  /* only keep fragments with real content — "hey" makes junk callbacks */
+  if (t.length < 6 || NOTTOPICS.test(t) || !toks(t).length) return;
   if (!mem.topics.includes(t)){ mem.topics.push(t); if (mem.topics.length>3) mem.topics.shift(); }
 }
 const CALLBACKS = [
@@ -597,7 +600,8 @@ function reflect(s){
   return s.split(/\s+/).map(w=>{
     const p = w.toLowerCase().replace(/[^a-z']/g,"");
     return REFLECT[p] ? w.toLowerCase().replace(p, REFLECT[p]) : w;
-  }).join(" ").replace(/[.!?]+$/,"");
+  }).join(" ").replace(/[.!?]+$/,"")
+    .replace(/\b(to|with|at|for|about|of|from) I\b/g, "$1 me");
 }
 const ELIZA = [
   [/my name is (\w+)|i'?m called (\w+)|call me (\w+)/i, m=>{
@@ -645,7 +649,8 @@ function sentiment(t){
   return s;
 }
 function echo(text){
-  const m = text.replace(/[.!?]+$/,"").match(/(?:\w+\s){0,2}\w+$/);
+  const m = text.replace(/[.!?]+$/,"")
+    .match(/(?:\b(?:not|never|no|nie)\s+)?(?:\w+\s){0,2}\w+$/i);
   return m ? m[0] : null;
 }
 const FOLLOWUPS = [
@@ -724,12 +729,16 @@ SCEN.forEach((sc, si) => sc.protos.forEach(t => PROTO.push({ si, t })));
 
 /* function words carry no topic; pronouns and wh-words are kept on purpose
    ("your job" vs "my job" is exactly what separates two scenarios) */
-const STOP = new Set(("a an the and or but if then of at by for with about to from in on up down out over under again very just really is are am was were be been being do does did doing have has had having will would could should shall may might must this that these those it its as not no nor please").split(" "));
+const STOP = new Set(("a an the and or but if then of at by for with about to from in on up down out over under again very just really is are am was were be been being do does did doing have has had having will would could should shall may might must this that these those it its as not no nor please honestly actually basically literally tbh").split(" "));
 /* tiny classical thesaurus: map common variants onto words that actually
    appear in the prototypes (canonical forms chosen to stem consistently) */
 const CONTR = { "i'm":"i","i've":"i","i'll":"i","i'd":"i","what's":"what",
   "you're":"you","you've":"you","don't":"do","can't":"can","won't":"will",
-  "let's":"let","it's":"it","that's":"that","there's":"there" };
+  "let's":"let","it's":"it","that's":"that","there's":"there",
+  im:"i", ive:"i", whats:"what", youre:"you", dont:"do", cant:"can",
+  lets:"let", thats:"that", theres:"there", u:"you", ur:"your",
+  wich:"which", wat:"what", wher:"where", wot:"what", hw:"how",
+  gud:"good", pls:"please", plz:"please" };
 const SYN = {
   starving:"hungry", famished:"hungry", peckish:"hungry",
   film:"movie", films:"movie", flick:"movie", cinema:"movie",
@@ -813,7 +822,7 @@ function nearestVocab(w){
   if (hit !== undefined) return hit;
   if (!VGRAMS) VGRAMS = Object.keys(DF).map(v => [v, new Set(grams2(v))]);
   const g = grams2(w);
-  let best = w, bs = 0.72; /* strict: only clear near-misses map over */
+  let best = w, bs = 0.68; /* strict: only clear near-misses map over */
   for (const [v, vg] of VGRAMS){
     if (Math.abs(v.length - w.length) > 2) continue;
     let inter = 0;
@@ -864,6 +873,9 @@ const BRAIN_STATUS = "classical brain · "+SCEN.length+" scenarios · fully offl
 
 /* keyword matching on stem-normalized tokens: kw "raining" matches
    "is it gona rain", token boundaries prevent "brain" matching "rain" */
+/* stems that collide with unrelated meanings: "cheers" (bye) vs
+   "cheer me up" — these match as exact substrings only */
+const KW_EXACT_ONLY = new Set(["cheers"]);
 const KWNORM = new Map();
 function kwNorm(w){
   let n = KWNORM.get(w);
@@ -874,7 +886,7 @@ function kwNorm(w){
      very short stems disable the stemmed path (exact substring still works). */
   const words = w.split(/\s+/).filter(Boolean);
   const tk = toks(w);
-  let ok = tk.length === words.length;
+  let ok = tk.length === words.length && !KW_EXACT_ONLY.has(w);
   if (ok && tk.length === 1 && tk[0].length < 4) ok = false;
   n = ok ? tk.join(" ") : "";
   KWNORM.set(w, n);
@@ -918,6 +930,15 @@ function useScen(sc){
   }
   return r;
 }
+
+/* scenarios that only make sense as user->bot questions; statements must
+   clear a higher bar to land on them */
+const BOTQ = new Set(["name","myname","home","family","age","gender","looks",
+  "personality","birthday","job","eats","jackal","fear","dream","lifestory",
+  "bot","version","friends","hobby","colour","animal","cando","topics",
+  "languages","riddle","fact","secret","smart","creator","privacy","datetime",
+  "howwork","news","sleep","now","weekend","tech","humans","feelings",
+  "lonelybot","howru"]);
 
 /* ================= the pipeline ================= */
 async function pickReplyInner(raw){
@@ -1009,13 +1030,21 @@ async function pickReplyInner(raw){
      words the brain has never seen ("magnets", "titanic") is about the
      wider world — unless the match is very confident, honesty beats a
      lookalike answer */
-  const isQ = /\?/.test(text) || /^(what|who|where|when|why|how|which|can|could|do|does|did|is|are|will|would|should)\b/i.test(text);
+  const isQ = /\?/.test(text) || /^(what|wat|whats|who|whos|where|wher|when|why|how|hw|hows|which|wich|can|could|do|does|did|is|are|r|will|would|should)\b/i.test(text);
   const qtk = qtoks(text);
   const oov = qtk.filter(w => DF[w] === undefined).length;
+  /* a declarative message ("great day today!") should not land on a
+     scenario that only answers questions about Tsamma (datetime, age...) */
+  const isRequest = /^(tell|give|show|sing|say|share|teach|explain|describe|suggest|recommend|entertain|gooi|ask|hit|crack|cheer|come)\b/i.test(text);
+  const isStatement = !isQ && !isRequest;
 
   // 3. strong classical fuzzy match beats everything else
-  const hit = fuzzyHit(text);
-  const strongBar = TH.strong + (answering ? 0.1 : 0) + (isQ && oov ? 0.1 : 0);
+  const senti = sentiment(t);
+  const moodReport = isStatement && senti !== 0 && qtk.length <= 3;
+  const hit = (moodReport && qtk.length <= 1) ? null : fuzzyHit(text);
+  const strongBar = TH.strong + (answering ? 0.1 : 0) + (isQ && oov ? 0.1 : 0)
+    + (hit && isStatement && BOTQ.has(hit.sc.id) ? 0.12 : 0)
+    + (moodReport ? 0.1 : 0);
   if (hit && hit.score >= strongBar) { lastUserMsg = text; mem.lastRoute = "fuzzy-strong:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
 
   // 4. scenario keywords (before ELIZA so 'can you give me advice' finds advice)
@@ -1027,7 +1056,7 @@ async function pickReplyInner(raw){
     const m = text.match(ELIZA[i][0]);
     if (m) { lastUserMsg = text; mem.pending = false; mem.lastRoute = "eliza:"+i; return ELIZA[i][1](m); }
   }
-  if (!answering && !(isQ && oov) && hit && hit.score >= TH.weak) { lastUserMsg = text; mem.lastRoute = "fuzzy-weak:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
+  if (!answering && !(isQ && oov) && !moodReport && !(hit && isStatement && BOTQ.has(hit.sc.id)) && hit && hit.score >= TH.weak) { lastUserMsg = text; mem.lastRoute = "fuzzy-weak:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
 
   // 6. she asked you something last turn: acknowledge the answer —
   //    but a question back is not an answer
@@ -1055,9 +1084,8 @@ async function pickReplyInner(raw){
   //    fires as a variety valve right after a clarify, and then only with
   //    neutral "chat" lines — no greeting or goodbye junk mid-conversation.
   lastUserMsg = text;
-  const s = sentiment(t);
-  if (s < 0){ mem.lastRoute = "clarify:neg"; return fill(bagPick("cl:neg", CLARIFY_NEG)); }
-  if (s > 0){ mem.lastRoute = "clarify:pos"; return fill(bagPick("cl:pos", CLARIFY_POS)); }
+  if (senti < 0){ mem.lastRoute = "clarify:neg"; return fill(bagPick("cl:neg", CLARIFY_NEG)); }
+  if (senti > 0){ mem.lastRoute = "clarify:pos"; return fill(bagPick("cl:pos", CLARIFY_POS)); }
   const prev = mem.history.length ? mem.history[mem.history.length-1].route : null;
   const justClarified = prev && prev.startsWith("clarify");
   if (!justClarified){

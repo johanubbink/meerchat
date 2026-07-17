@@ -559,7 +559,8 @@ const PROTO_EXTRA = {
    "got a knock knock joke",
    "whats the funniest thing you have heard",
    "gimme a giggle boet",
-   "cheer me up with something hilarious"
+   "cheer me up with something hilarious",
+   "cheer me up with a good joke please"
   ],
   "kw": [
    "crack a joke",
@@ -567,7 +568,10 @@ const PROTO_EXTRA = {
    "funniest thing",
    "make me giggle",
    "need a laugh",
-   "humour me"
+   "humour me",
+   "best joke",
+   "cheer me up",
+   "funniest joke"
   ]
  },
  "riddle": {
@@ -760,7 +764,10 @@ const PROTO_EXTRA = {
    "can other people read what we discuss",
    "are our conversations private",
    "do you store my messages somewhere",
-   "is this chat confidential"
+   "is this chat confidential",
+   "do you keep my chat history",
+   "are my messages saved anywhere",
+   "do you save our conversation"
   ],
   "kw": [
    "tracking me",
@@ -772,7 +779,11 @@ const PROTO_EXTRA = {
    "confidential",
    "conversations private",
    "chats stored",
-   "being recorded"
+   "being recorded",
+   "chat history",
+   "my chats",
+   "keep my chat",
+   "messages saved"
   ]
  },
  "datetime": {
@@ -964,7 +975,10 @@ const PROTO_EXTRA = {
    "am i your favourite human",
    "would you say im lekker",
    "do u like me even a bit",
-   "make me feel special"
+   "make me feel special",
+   "what do you like most about me",
+   "anything you admire about me",
+   "whats the best thing about me"
   ],
   "kw": [
    "a compliment",
@@ -973,7 +987,10 @@ const PROTO_EXTRA = {
    "rate me",
    "am i cool",
    "your favourite human",
-   "say something nice"
+   "say something nice",
+   "about me",
+   "admire about",
+   "best thing about"
   ]
  },
  "insult": {
@@ -985,7 +1002,6 @@ const PROTO_EXTRA = {
    "you're a waste of my time",
    "eish you're irritating me now",
    "go away, nobody likes you",
-   "you're terrible at this",
    "what a dof little animal",
    "I can't stand you"
   ],
@@ -996,8 +1012,7 @@ const PROTO_EXTRA = {
    "ur trash",
    "you're irritating",
    "nobody likes you",
-   "can't stand you",
-   "you're terrible"
+   "can't stand you"
   ]
  },
  "swear": {
