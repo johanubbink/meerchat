@@ -1,4 +1,4 @@
-/* ============== TSAMMA'S BRAIN v11 ==============
+/* ============== TSAMMA'S BRAIN v12 ==============
    ~84 scenarios + conversation state + classical fuzzy routing.
    New in v11:
    - the transformer embedding classifier (bge-small / MiniLM via
@@ -15,8 +15,8 @@
    -> scenario keywords -> ELIZA -> fuzzy(weak) -> pending-ack
    -> memory callback -> sentiment+pool */
 
-const VERSION = "v11";
-const mem = { name:null, turns:0, lastScen:null, moreIdx:0, pending:false,
+const VERSION = "v12";
+const mem = { name:null, turns:0, lastScen:null, moreIdx:0, pending:true,
               topics:[], lastCb:0, history:[], awaitName:3 };
 
 function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
@@ -26,9 +26,12 @@ function tod(){ const h = new Date().getHours();
   return h<5?"night":h<12?"morning":h<17?"afternoon":h<21?"evening":"night"; }
 function dayName(){ return ["Sunday","Monday","Tuesday","Wednesday","Thursday",
   "Friday","Saturday"][new Date().getDay()]; }
-function fill(s){ return s.replaceAll("{W}", who())
-                          .replaceAll("{TOD}", tod())
-                          .replaceAll("{DAY}", dayName()); }
+function fill(s){
+  const w = who();
+  return s.replaceAll("{TOD}", tod()).replaceAll("{DAY}", dayName())
+          .replace(/(^|[.!?]["')\]]*\s+)\{W\}/g, (m,p)=>p+capitalize(w))
+          .replaceAll("{W}", w);
+}
 
 /* ---- non-repeating rotation (shuffle bags) ----
    Each answer pool rotates through every option in random order before any
@@ -81,7 +84,7 @@ const SCEN = [
     "Tsamma's the name, sentry duty's the game. Head lookout of the Duinbos mob.",
     "Tsamma. One name, like all the greats. Named for the melon that once saved the whole mob."]},
 
-{id:"myname", re:/what('?s| is) my name|do you (know|remember) my name|say my name\b|who am i\b|what am i called|you know who i am/i,
+{id:"myname", re:/what('?s| is) my name|do you (know|remember) my name|say my name\b|who am i\b(?! talking| speaking| chatting)|what am i called|you know who i am/i,
  protos:["what is my name","do you know my name, do you remember what I am called"],
  kw:["my name","who am i"],
  dyn: () => mem.name
@@ -604,7 +607,7 @@ function reflect(s){
     .replace(/\b(to|with|at|for|about|of|from) I\b/g, "$1 me");
 }
 const ELIZA = [
-  [/my name is (\w+)|i'?m called (\w+)|call me (\w+)/i, m=>{
+  [/my name is (\w+)|i'?m called (\w+)|call me (?!that\b|this\b|it\b|later\b|back\b|when\b|anything\b|whatever\b|again\b)(\w+)/i, m=>{
      mem.name = capitalize(m[1]||m[2]||m[3]);
      return pick([`${mem.name}! Lekker to meet you properly. Sentries never forget a face. Or a name.`,
                   `Aweh, ${mem.name}! Now we're proper chinas.`]); }],
@@ -857,7 +860,7 @@ function fuzzyHit(text){
   if (text.split(/\s+/).length<=3 && lastUserMsg
       && qtoks(text).some(w => DF[w] !== undefined)){
     const b = bestCombined(lastUserMsg+" "+text);
-    if (b) return b;
+    if (b && (!raw || b.score > raw.score)) return b;
   }
   return raw;
 }
@@ -898,7 +901,7 @@ function keywordHit(t, minN){
   for(const sc of SCEN){
     if(!sc.kw) continue;
     const n = sc.kw.reduce((a,w)=>{
-      if (t.includes(" "+w+" ")) return a+1;
+      if (t.includes(" "+w.trim()+" ")) return a+1;
       const k = kwNorm(w);
       return a + (k && tn.includes(" "+k+" ") ? 1 : 0);
     },0);
@@ -989,7 +992,7 @@ async function pickReplyInner(raw){
       .replace(/ (nice|good|lekker) to meet (you|u)$/i, "");
     const nm = core
       .match(/^((?:the )?name'?s |everyone calls me |they call me |people call me |(?:you can )?call me |my name is |my name'?s |my name |i'?m |i am |iam |it'?s |its )?([a-z][a-z'-]+)( [a-z'-]+)?$/i);
-    const NOTNAMES = /^(hi|hello|hey|howzit|aweh|hoezit|heita|dumela|molo|yo|ja|yebo|yes|no|nope|ok|okay|fine|good|great|lekker|sharp|shap|cool|nothing|nobody|dunno|guess|sup|nee|eish|shame|thanks|thanx|please|maybe|sure|version|bye|why|what|who|how|help|test|testing|lol|lmao|meh|yoh|sjoe|serious|srsly|really|realy|haha\w*|hmm\w*|same|average|alright|busy|tired|hungry|bored|sick|sad|happy|angry|stressed|wyd|rn)$/i;
+    const NOTNAMES = /^(hi|hello|hey|howzit|aweh|hoezit|heita|dumela|molo|yo|ja|yebo|yes|no|nope|ok|okay|fine|good|great|lekker|sharp|shap|cool|nothing|nobody|dunno|guess|sup|nee|eish|shame|thanks|thanx|please|maybe|sure|version|bye|why|what|who|how|help|test|testing|lol|lmao|meh|yoh|sjoe|serious|srsly|really|realy|haha\w*|hmm\w*|same|average|alright|busy|tired|hungry|bored|sick|sad|happy|angry|stressed|wyd|rn|complicated|difficult|tricky|hard|weird|personal|private|nobody's|classified)$/i;
     /* out-of-vocabulary test: none of the prototype sentences contain the
        word, so it can't be an on-topic message — likely a proper name */
     const inVocab = (w) => { const tk = toks(w); return !tk.length || DF[tk[0]] !== undefined; };
@@ -1026,6 +1029,9 @@ async function pickReplyInner(raw){
      topic), but weak matches must not hijack them: "all good my side" is a
      reply to "how are you?", not the user asking howru. */
   const answering = mem.pending && !/\?/.test(text);
+  /* long messages carry enough signal to route on their own merits; the
+     answer-protection is for short replies like "all good my side" */
+  const shortAnswer = answering && text.trim().split(/\s+/).length <= 8;
   /* out-of-vocabulary question gate: a question whose content includes
      words the brain has never seen ("magnets", "titanic") is about the
      wider world — unless the match is very confident, honesty beats a
@@ -1042,13 +1048,13 @@ async function pickReplyInner(raw){
   const senti = sentiment(t);
   const moodReport = isStatement && senti !== 0 && qtk.length <= 3;
   const hit = (moodReport && qtk.length <= 1) ? null : fuzzyHit(text);
-  const strongBar = TH.strong + (answering ? 0.1 : 0) + (isQ && oov ? 0.1 : 0)
+  const strongBar = TH.strong + (shortAnswer ? 0.1 : 0) + (isQ && oov ? 0.1 : 0)
     + (hit && isStatement && BOTQ.has(hit.sc.id) ? 0.12 : 0)
     + (moodReport ? 0.1 : 0);
   if (hit && hit.score >= strongBar) { lastUserMsg = text; mem.lastRoute = "fuzzy-strong:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
 
   // 4. scenario keywords (before ELIZA so 'can you give me advice' finds advice)
-  const kh = keywordHit(t, answering ? 2 : 1);
+  const kh = keywordHit(t, shortAnswer ? 2 : 1);
   if (kh) { lastUserMsg = text; mem.lastRoute = "keyword:"+kh.id; return useScen(kh); }
 
   // 5. ELIZA reflections, then weak fuzzy
@@ -1056,7 +1062,7 @@ async function pickReplyInner(raw){
     const m = text.match(ELIZA[i][0]);
     if (m) { lastUserMsg = text; mem.pending = false; mem.lastRoute = "eliza:"+i; return ELIZA[i][1](m); }
   }
-  if (!answering && !(isQ && oov) && !moodReport && !(hit && isStatement && BOTQ.has(hit.sc.id)) && hit && hit.score >= TH.weak) { lastUserMsg = text; mem.lastRoute = "fuzzy-weak:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
+  if (!shortAnswer && !(isQ && oov) && !moodReport && !(hit && isStatement && BOTQ.has(hit.sc.id)) && hit && hit.score >= TH.weak) { lastUserMsg = text; mem.lastRoute = "fuzzy-weak:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
 
   // 6. she asked you something last turn: acknowledge the answer —
   //    but a question back is not an answer
@@ -1122,7 +1128,7 @@ async function pickReply(raw){
   /* dialogue state: any reply that ends on a question means Tsamma asked
      the user something — the next message is probably an answer, and should
      be acknowledged rather than fed to the generic pool */
-  mem.pending = /\?\s*$/.test(r);
+  mem.pending = mem.pending || /\?\s*$/.test(r);
   mem.history.push({ u: raw, a: r, route: mem.lastRoute });
   if (mem.history.length > 8) mem.history.shift();
   return r;
