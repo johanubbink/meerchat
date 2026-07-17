@@ -880,6 +880,10 @@ async function pickReplyInner(raw){
 }
 async function pickReply(raw){
   const r = await pickReplyInner(raw);
+  /* dialogue state: any reply that ends on a question means Tsamma asked
+     the user something — the next message is probably an answer, and should
+     be acknowledged rather than fed to the generic pool */
+  mem.pending = /\?\s*$/.test(r);
   mem.history.push({ u: raw, a: r, route: mem.lastRoute });
   if (mem.history.length > 8) mem.history.shift();
   return r;
