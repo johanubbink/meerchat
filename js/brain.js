@@ -391,7 +391,8 @@ const SCEN = [
  a:["Aweh, you're back! The mound got two centimetres taller from all my waiting. Good to see you, {W}.",
     "Miss you? A sentry never admits to distraction. But between us — ja, the horizon was less interesting without you."]},
 
-{id:"greetscen", protos:["hello there, hi, how are you","good morning, hey, what's up",
+{id:"greetscen", re:/^(howzit|hi+|hello+|hey+|aweh+|heita|molo|dumela|sawubona|yo|hoezit|good (morning|afternoon|evening)|more)[\s,!.]*((my )?(tsamma|bru|boet|china|friend|meerkat|swaer|there|man|everyone))?[\s!.?]*$/i,
+ protos:["hello there, hi, how are you","good morning, hey, what's up",
          "yo, sup","hiya! anyone there?","howzit my friend"],
  kw:["hello","howzit","aweh","good morning","good evening"," hey ","what's up"," sup ","hi tsamma"],
  a:["Aweh, {W}! Good to see you. All quiet on the dunes — perfect time to chat.",
@@ -924,20 +925,24 @@ async function pickReplyInner(raw){
   const text = raw.trim();
   const t = " "+text.toLowerCase().replace(/[^a-z' ]/g," ")+" ";
 
+  // interjections peel off before the continuation test, so
+  // "hahaha another one" reads as "another one"
+  const contText = text.replace(/^((lol+|lmao|rofl|(ha|he)+h?|yoh|eish|sjoe|jislaaik|wow|ja|ok(ay)?|nice|cool|sharp|shame|aweh)[\s,!.]+)+/i, "") || text;
+
   // 0a. a continuation word with no topic on the table is just social
   //     noise ("lol", "ok cool") — smile back and hand over the turn
-  if (!mem.lastScen && CONT_RE.test(text) && !mem.pending){
+  if (!mem.lastScen && CONT_RE.test(contText) && !mem.pending){
     lastUserMsg = text;
     mem.lastRoute = "cont:noctx";
     return fill(bagPick("cont0", CONT_NOCTX));
   }
 
   // 0. continuations: short follow-ups stay on the last topic
-  if (mem.lastScen && CONT_RE.test(text)){
+  if (mem.lastScen && CONT_RE.test(contText)){
     const sc = mem.lastScen;
     if (sc.more && mem.moreIdx < sc.more.length)
       { const r = fill(sc.more[mem.moreIdx++]); lastUserMsg = text; mem.lastRoute = "cont:more:"+sc.id; return r; }
-    if (/another|again|more/i.test(text) && sc.a.length > 1)
+    if (/another|again|more/i.test(contText) && sc.a.length > 1)
       { lastUserMsg = text; mem.lastRoute = "cont:again:"+sc.id; return pickA(sc); }
     lastUserMsg = text;
     mem.lastRoute = "cont:generic";
@@ -1024,8 +1029,9 @@ async function pickReplyInner(raw){
   }
   if (!answering && !(isQ && oov) && hit && hit.score >= TH.weak) { lastUserMsg = text; mem.lastRoute = "fuzzy-weak:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
 
-  // 6. she asked you something last turn: acknowledge the answer
-  if (mem.pending){
+  // 6. she asked you something last turn: acknowledge the answer —
+  //    but a question back is not an answer
+  if (mem.pending && !isQ){
     mem.pending = false;
     lastUserMsg = text;
     mem.lastRoute = "ack";
@@ -1057,10 +1063,16 @@ async function pickReplyInner(raw){
   if (!justClarified){
     const tkn = toks(text);
     const known = tkn.filter(w => DF[w] !== undefined).length;
+    /* a well-formed question about the wider world deserves the honest
+       "beyond my dune" rather than the "say that again" reserved for
+       actual gibberish */
+    if (isQ && text.trim().split(/\s+/).length >= 3){
+      mem.lastRoute = "clarify:q"; return fill(bagPick("cl:q", CLARIFY_Q));
+    }
     if (!tkn.length || known / tkn.length < 0.34){
       mem.lastRoute = "clarify:huh"; return fill(bagPick("cl:huh", CLARIFY_HUH));
     }
-    if (/\?/.test(text) || /^(what|who|where|when|why|how|which|can|could|do|does|did|is|are|will|would|should)\b/i.test(text)){
+    if (isQ){
       mem.lastRoute = "clarify:q"; return fill(bagPick("cl:q", CLARIFY_Q));
     }
     const e = echo(text);
