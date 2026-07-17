@@ -507,7 +507,10 @@ const PROTO_EXTRA = {
    "im out of ideas what now",
    "help me pick a subject",
    "what else can we chat about",
-   "throw me a topic bru"
+   "throw me a topic bru",
+   "give me some topic suggestions",
+   "what can we chat about here",
+   "suggest something to talk about"
   ],
   "kw": [
    "conversation starter",
@@ -515,7 +518,10 @@ const PROTO_EXTRA = {
    "something to chat about",
    "what to ask you",
    "out of ideas",
-   "shall we discuss"
+   "shall we discuss",
+   "topic suggestions",
+   "chat about",
+   "something to talk"
   ]
  },
  "languages": {
@@ -751,7 +757,10 @@ const PROTO_EXTRA = {
    "are my chats safe with you",
    "do you sell my details to anyone",
    "do you keep a log of our talks",
-   "can other people read what we discuss"
+   "can other people read what we discuss",
+   "are our conversations private",
+   "do you store my messages somewhere",
+   "is this chat confidential"
   ],
   "kw": [
    "tracking me",
@@ -759,7 +768,11 @@ const PROTO_EXTRA = {
    "store my messages",
    "my personal information",
    "see what i type",
-   "keep a log"
+   "keep a log",
+   "confidential",
+   "conversations private",
+   "chats stored",
+   "being recorded"
   ]
  },
  "datetime": {
@@ -797,7 +810,9 @@ const PROTO_EXTRA = {
    "how does a meerkat type messages",
    "what algorithm do you use",
    "tell me how you generate your answers",
-   "how does this app function"
+   "how does this app function",
+   "explain how you function behind the scenes",
+   "how does your brain actually work"
   ],
   "kw": [
    "how were you made",
@@ -805,7 +820,11 @@ const PROTO_EXTRA = {
    "what powers you",
    "algorithm",
    "makes you tick",
-   "your programming"
+   "your programming",
+   "you function",
+   "behind the scenes",
+   "ur brain",
+   "your brain"
   ]
  },
  "weather": {
@@ -820,7 +839,10 @@ const PROTO_EXTRA = {
    "lekker sunshine here today, warm and bright",
    "whats the forecast for tomorrow",
    "the wind is howling outside my window",
-   "wat is the wether like today"
+   "wat is the wether like today",
+   "hows the sky looking today",
+   "is it hot out there by you",
+   "whats the weather like on the dunes"
   ],
   "kw": [
    "the forecast",
@@ -830,7 +852,10 @@ const PROTO_EXTRA = {
    "scorching",
    "freezing cold",
    "boiling hot",
-   "degrees outside"
+   "degrees outside",
+   "the sky looking",
+   "hot out there",
+   "cold out there"
   ]
  },
  "news": {
@@ -1224,7 +1249,12 @@ const PROTO_EXTRA = {
    "im leaving now, take care",
    "koebaai, mooi loop",
    "ttyl, peace out",
-   "thats me done for today"
+   "thats me done for today",
+   "okay i need to head out now",
+   "im off talk soon",
+   "night night sleep well",
+   "im out see ya",
+   "off to bed now"
   ],
   "kw": [
    "see ya",
@@ -1234,7 +1264,12 @@ const PROTO_EXTRA = {
    "speak soon",
    "im leaving",
    "off to bed",
-   "peace out"
+   "peace out",
+   "i'm out",
+   "im out",
+   "head out",
+   "heading out",
+   "talk soon"
   ]
  },
  "advice": {
@@ -1454,7 +1489,10 @@ const PROTO_EXTRA = {
    "such fantastic news, im buzzing",
    "so stoked, my dream finally came true",
    "yay, finally some good luck for me",
-   "today has been absolutely wonderful, I must share"
+   "today has been absolutely wonderful, I must share",
+   "today was amazing everything went right",
+   "i have wonderful news to share",
+   "im so stoked right now"
   ],
   "kw": [
    "over the moon",
@@ -1464,7 +1502,10 @@ const PROTO_EXTRA = {
    "so stoked",
    "fantastic news",
    "i'm buzzing",
-   "im so happy"
+   "im so happy",
+   "wonderful news",
+   "best day",
+   "went right"
   ]
  },
  "bored": {
@@ -1736,7 +1777,11 @@ const PROTO_EXTRA = {
    "bru my dog ate my shoe again",
    "got any pets yourself",
    "our goldfish passed away yesterday",
-   "wat do u think of parrots as pets"
+   "wat do u think of parrots as pets",
+   "i have a pet at home",
+   "my puppy is the cutest thing",
+   "do you like dogs and cats",
+   "we adopted a kitten last week"
   ],
   "kw": [
    "my puppy",
@@ -1745,7 +1790,9 @@ const PROTO_EXTRA = {
    "my parrot",
    "my goldfish",
    "got a puppy",
-   "my bunny"
+   "my bunny",
+   "my budgie",
+   "my pup"
   ]
  },
  "humans": {
@@ -1781,7 +1828,10 @@ const PROTO_EXTRA = {
    "eish, big question: does the universe have a plan",
    "tell me something profound about existence",
    "why r we even here",
-   "let's get philosophical for a minute"
+   "let's get philosophical for a minute",
+   "why do we all exist anyway",
+   "what is it all for in the end",
+   "whats the point of life"
   ],
   "kw": [
    "purpose of life",
@@ -1790,7 +1840,11 @@ const PROTO_EXTRA = {
    "afterlife",
    "why do we exist",
    "what's it all about",
-   "philosoph"
+   "philosoph",
+   "we all exist",
+   "all for",
+   "point of life",
+   "why are we all"
   ]
  },
  "decide": {

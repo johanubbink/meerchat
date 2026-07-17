@@ -162,7 +162,7 @@ const SCEN = [
  kw:["about yourself","backstory","life story"],
  a:["Born in the Duinbos burrow, nearly eaten by an eagle as a pup, swore I'd become head sentry, and here I am — four years on and Ou Skelm still hasn't gotten past me. That's the short version, {W}."]},
 
-{id:"bot", re:/are you (an? )?(ai|bot|robot|computer|real)/i,
+{id:"bot", re:/are you (an? )?(ai|bot|robot|computer|real)\b/i,
  protos:["are you a robot or artificial intelligence, are you real",
          "are you a real meerkat or a machine","are you human, am I talking to a computer program",
          "is this a chatbot"],
@@ -300,7 +300,8 @@ const SCEN = [
     "News! One goshawk sighted and shouted at, two pups learned to eat scorpion, and Mama Nossob predicts rain. She's always right, so — pack accordingly, {W}."]},
 
 /* ---------- compliments & romance ---------- */
-{id:"compliment", protos:["you are so funny and clever","I like you, you're great",
+{id:"compliment", re:/\bi (really |properly |proper )?(like|love) (you|u)\b|you('?re| are) (so |really |very )?(funny|clever|smart|sharp|cute|great|amazing|awesome|the best)/i,
+ protos:["you are so funny and clever","I like you, you're great",
          "you're the best, you're amazing","haha that's hilarious, you're cute"],
  kw:["you're funny","you are funny","you're clever","you're smart","i like you","you're cute","you're the best","you're amazing"],
  a:["Ag stop it, you're making my tail curl.",
@@ -560,7 +561,13 @@ const SCEN = [
 ];
 
 /* ---- continuations & acknowledgments ---- */
-const CONT_RE = /^((and |so )?then what( happened)?( next)?|what happened( then| next)?|why|why not|how come|really|serious(ly)?|no ways|is it|and( then)?|more|another( one)?|again|go on|carry on|ok(ay)?|ja|yes|yebo|no|nope|lol|haha+|hmm+|cool|nice|sharp|shame|eish|wow)[\s?!.]*$/i;
+const CONT_RE = /^((and |so )?then what( happened)?( next)?|what happened( then| next)?|why|why not|how come|really|realy|serious(ly)?|srsly|no ways+|is it|and( then)?|(tell me )?more( please)?|another( one)?( please)?|again|go on( then)?|carry on|ok(ay)?( cool| nice| lekker)?|ja( nee)?|yes|yebo|no|nope|lol+|lmao|rofl|(ha|he)+h?|hmm+|mm+|cool|nice( one)?|lekker|sharp( sharp)?|shap|shame|eish|yoh|sjoe|jislaaik|wow|aweh|dude|no way)[\s?!.]*$/i;
+const CONT_NOCTX = [
+  "Hehe, ja. So — your turn, {W}: ask me anything, the horizon's quiet.",
+  "Exactly. Right, what's next on your mind, {W}?",
+  "Ja né! Come, give me something to work with — news, questions, gossip, anything.",
+  "Mm-hm. The mound is open for business, {W} — what shall we get into?",
+];
 const CONT_GENERIC = [
   "Serious, {W}. Sentry's honour — we're not allowed to lie above ground.",
   "Ja, really! Would I make things up from this height? The whole mob can hear me.",
@@ -618,8 +625,8 @@ const ELIZA = [
 ];
 
 /* ---- sentiment + final fallback pool ---- */
-const POS = ["good","great","happy","love","lekker","awesome","nice","amazing","fantastic","excited","won","best"];
-const NEG = ["bad","sad","tired","angry","upset","terrible","awful","stress","worried","sick","lost","worst","hate","lonely"];
+const POS = ["good","great","happy","love","lekker","awesome","nice","amazing","fantastic","excited","won","best","wonderful","marvellous","stoked","chuffed","brilliant"];
+const NEG = ["bad","sad","tired","angry","upset","terrible","awful","stress","worried","sick","lost","worst","hate","lonely","down","drained","rough","bleak","moeg","gatvol","miserable","exhausted","crap","kak"];
 const NEGATORS = new Set(["not","no","never","nie","isn't","ain't","wasn't",
   "don't","can't","won't","couldn't","shouldn't","hardly","barely","less"]);
 function sentiment(t){
@@ -744,6 +751,12 @@ const SYN = {
   kid:"kids", child:"kids", children:"kids",
   smart:"clever", intelligent:"clever",
   chow:"eat", nosh:"eat", grub:"food",
+  feelin:"feeling", goin:"going", doin:"doing", nothin:"nothing",
+  somethin:"something", wrk:"work", werk:"work", nite:"night",
+  tonite:"tonight", moeg:"tired", drained:"tired", gatvol:"angry",
+  siek:"sick", newz:"news", fone:"phone", pics:"picture", pic:"picture",
+  doggo:"dog", pup:"dog", puppy:"dog", kitten:"cat", kitty:"cat",
+  hamster:"pet", goldfish:"pet", parrot:"pet", budgie:"pet",
 };
 function stemWord(w){
   if (w.length<=3) return w;
@@ -910,6 +923,14 @@ async function pickReplyInner(raw){
   mem.turns++;
   const text = raw.trim();
   const t = " "+text.toLowerCase().replace(/[^a-z' ]/g," ")+" ";
+
+  // 0a. a continuation word with no topic on the table is just social
+  //     noise ("lol", "ok cool") — smile back and hand over the turn
+  if (!mem.lastScen && CONT_RE.test(text) && !mem.pending){
+    lastUserMsg = text;
+    mem.lastRoute = "cont:noctx";
+    return fill(bagPick("cont0", CONT_NOCTX));
+  }
 
   // 0. continuations: short follow-ups stay on the last topic
   if (mem.lastScen && CONT_RE.test(text)){
