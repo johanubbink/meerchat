@@ -21,77 +21,112 @@ Scripts are classic (non-module) tags so `file://` keeps working. `js/brain.js`
 never touches `document`/`window` except to export `window.__meer` when a
 window exists, so Node tests can load it directly.
 
-## The brain (js/brain.js)
+## The brain (js/brain.js, v12)
 
 State lives in `mem`: user name, turn count, last scenario, pending-question
-flag, up to 3 remembered topics, short history.
+flag (did Tsamma just ask something), name-capture window countdown, up to 3
+remembered topics, short history with per-reply route provenance
+(`mem.lastRoute`, e.g. `fuzzy-strong:joke:0.612`).
 
 ### Knowledge
 
-- `SCEN`: ~84 scenarios. Each has an `id`, answer pool `a`, and up to three
+- `SCEN`: 84 scenarios. Each has an `id`, answer pool `a`, and up to three
   ways to be matched: `re` (exact regex), `protos` (prototype sentences for
   fuzzy matching), `kw` (keyword substrings). Optional: `more` (continuation
-  parts, e.g. multi-part stories), `asks` (marks that Tsamma asked the user a
-  question), `dyn` (dynamic answer function, e.g. recalling the user's name).
-- `R`: 1000 generic replies tagged `chat`/`greet`/`food`/`danger`/`weather`/
-  `bye` — the last-resort pool.
-- `ELIZA`: classic reflection rules ("i feel X" → "Why do you feel X?") with
-  pronoun swapping (`REFLECT`).
+  parts), `asks` (Tsamma asked the user a question), `dyn` (dynamic answer,
+  e.g. recalling the user's name). `js/data/protos.js` merges in ~900 extra
+  prototypes and ~580 extra keywords at startup.
+- `R`: 1000 generic replies; only the neutral `chat` category is still used,
+  as a rare variety valve.
+- `ELIZA`: reflection rules ("i feel X" → "Why do you feel X?") with pronoun
+  swapping and object-pronoun repair ("chatting to I" → "to me").
+- Clarify pools: honest in-character fallbacks per situation — question
+  deflection ("beyond my dune"), gibberish ("say it again"), statement echo
+  ("tell me more about {E}?"), and valence-matched invitations for
+  emotional messages.
 
 ### Intent classifier
 
-Classical information retrieval: prototype sentences from every scenario are
-tokenised (stopword removal, contraction expansion, small thesaurus `SYN`,
-light suffix stemming) and embedded as TF-IDF vectors. A user message is
-scored by cosine similarity against every prototype; thresholds `TH.strong`
-(0.55) and `TH.weak` (0.40) gate how the match is used. Very short messages
-that match nothing are re-scored joined with the previous message (context
-boost). `__meer.probe("text")` in the console shows the top matches.
+Classical information retrieval: prototype sentences are tokenised (stopword
+and filler removal, contraction/typo normalisation `CONTR`, thesaurus `SYN`,
+light suffix stemming) into TF-IDF vectors; a message is scored by cosine
+similarity against every prototype. Out-of-vocabulary query tokens map to the
+closest vocabulary word by character-bigram Dice similarity ("wher" →
+"where") — classic spell correction that preserves the zero-similarity
+baseline for unrelated text. Keyword matching runs on stem-normalised tokens
+with a precision guard (nothing may be dropped in normalisation; no short
+generic stems; some words are exact-only). Thresholds `TH.strong` (0.58) and
+`TH.weak` (0.42), tuned on the eval harness. `__meer.probe("text")` shows top
+matches in the console.
+
+Routing is dialogue-state aware:
+
+- **Answering gate**: if Tsamma just asked a question, a short (≤8 words)
+  non-question reply is treated as an answer — scenarios need very confident
+  evidence to hijack it.
+- **OOV-question gate**: questions containing words the brain has never seen
+  ("magnets") prefer an honest deflection over a lookalike answer.
+- **Statement gate**: declarative messages can't land on question-only
+  scenarios (`BOTQ`) without clearing a higher bar; short sentiment-bearing
+  statements are mood reports and route to valence-matched fallbacks.
 
 ### Reply pipeline (pickReply)
 
-Priority order per message:
+Priority order per message (route names in parentheses):
 
-1. **Continuation**: short follow-ups ("why", "really", "another one") stay on
-   the last scenario; serve its `more` parts or another answer.
-2. **Exact regex** per scenario.
-3. **Name capture**: if Tsamma just asked the user's name, a short non-question
-   reply is treated as the name (guarded by a not-names list, keyword and
-   fuzzy checks).
-4. **Strong fuzzy match** (score ≥ 0.55).
-5. **Keyword hit** (most keyword substrings found).
-6. **ELIZA reflections**, then **weak fuzzy** (score ≥ 0.40).
-7. **Pending-question acknowledgment**: if Tsamma asked something last turn,
-   acknowledge the answer, sometimes echoing the user's last few words.
-8. **Memory callback**: occasionally circle back to a remembered topic.
-9. **Sentiment + pool**: sentiment prefix (word lists `POS`/`NEG`) + a line
-   from `R`, sometimes echoing the user or appending a follow-up question.
+1. Continuations (`cont:*`): short follow-ups ("why", "another one",
+   "hahaha more") stay on the last scenario; leading interjections peel off
+   first; with no topic on the table they get a light hand-back reply.
+2. Exact regex per scenario (`regex:id`).
+3. Name capture (`namecapture`): multi-turn window from the opening
+   question; courtesy wrappers stripped; bare words must be outside the
+   prototype vocabulary ("Thabo" passes, "busy" fails).
+4. Strong fuzzy (`fuzzy-strong:id`), then keywords (`keyword:id`), then
+   ELIZA (`eliza:n`), then weak fuzzy (`fuzzy-weak:id`) — all subject to the
+   gates above.
+5. Pending-question acknowledgment (`ack`): answers get acknowledged, with a
+   negation-preserving echo of the user's words.
+6. Memory callback (`callback`): junk-filtered topics only.
+7. Graceful fallback (`clarify:*`): sentiment first, then gibberish/question/
+   statement-echo deflections; the random pool (`pool:chat`) only fires right
+   after a clarify, and never greets or says goodbye mid-conversation.
 
 Answer pools rotate through shuffle-bags (`bagPick`) so no line repeats until
-the whole pool is used, and never twice in a row.
-
-Personality glue: `{W}` placeholders fill with the user's name or a random
-chommie word; `{TOD}`/`{DAY}` fill with time-of-day/day name; some personal
-answers bounce the question back ("same question back at you") to keep the
-conversation two-way.
+the pool is exhausted, never twice in a row. `{W}` fills with the user's name
+or one nickname per message (capitalized at sentence starts); `{TOD}`/`{DAY}`
+fill from the clock.
 
 ## UI (js/ui.js)
 
-- Animation: a fixed `seq` of frames (sentry, blink, look left/right, tail
+- Animation: fixed frame sequence (sentry, blink, look left/right, tail
   flick, duck) with per-frame hold times; respects `prefers-reduced-motion`.
-- `fitArt()` scales the ASCII art to viewport width/height.
-- Chat: input + send button; user bubble, "..." typing indicator, then the
-  brain's reply after a 500–1200 ms fake typing delay.
+- `fitArt()` scales the ASCII art to the viewport.
+- Chat: user bubble, "..." typing indicator, reply after a 500–1200 ms delay.
 
 ## Evaluation
 
-`eval/` contains a Node harness that simulates conversations against the brain
-and scores them; see `eval/README.md`. Run `node eval/run.js`.
+`eval/` simulates 100 seeded conversations x 100 messages against the
+unmodified production brain and scores every response deterministically; an
+LLM-judge protocol scores sampled transcripts. See `eval/README.md` and
+`eval/results/HISTORY.md` for the metric progression. Run `node eval/run.js`.
+
+## Paradigm note: neural embeddings
+
+A MiniLM sentence-embedding classifier (transformers.js) was benchmarked
+against the classical TF-IDF classifier on the same prototypes and held-out
+bank: 76.4% vs 64.6% top-1 intent accuracy, and much cleaner in/out-of-domain
+separation (Youden J 0.82 vs 0.60). It was NOT integrated: it costs a ~25 MB
+model download plus startup latency, which v11 deliberately eliminated. If
+the site ever accepts a download, the right shape is progressive
+enhancement: classical brain from millisecond zero, embedding scorer swapped
+in when the model finishes loading in the background.
 
 ## History
 
-Versions v1–v10 lived as separate HTML files (`index2.html` … `index5.html`,
-`tsamma-v9.html`), since removed; git history has them. v10 used transformer
-embeddings (transformers.js) and an optional WebLLM generative fallback; v11
-removed both in favour of the classical TF-IDF brain to get instant startup
-and full offline operation.
+Versions v1–v10 lived as separate HTML files, since removed (git history has
+them). v10 used transformer embeddings + optional WebLLM; v11 replaced both
+with the classical TF-IDF brain (instant start, fully offline). v12 split the
+file into modules and reworked the brain: dialogue-state tracking, robust
+name capture, graceful fallbacks instead of pool junk, typo bridging,
+augmented coverage, and precision gates — quantified in
+`eval/results/HISTORY.md`.

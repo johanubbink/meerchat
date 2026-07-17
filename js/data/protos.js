@@ -1562,7 +1562,10 @@ const PROTO_EXTRA = {
    "im swamped at work rn",
    "the meetings at my company never end",
    "job hunting is tough, no luck yet",
-   "retrenched last month, still looking for work"
+   "retrenched last month, still looking for work",
+   "my boss is on my case again",
+   "my boss is being difficult",
+   "work is hectic and my boss keeps pushing"
   ],
   "kw": [
    "at work",

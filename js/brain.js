@@ -335,7 +335,8 @@ const SCEN = [
     "I like you plenty, {W}. You listen, you laugh at Vlokkie's expense, and you haven't once tried to eat me. Top-tier company."]},
 
 /* ---------- insults / troll ---------- */
-{id:"insult", protos:["you are stupid and boring","I don't like you, you're useless",
+{id:"insult", re:/\b(domkop|dombo|idioot|dumbass)\b|you('?re| are) (a |an |such a |a real |so )?(idiot|moron|domkop|loser|muppet|stupid|dumb|useless|pathetic)\b/i,
+ protos:["you are stupid and boring","I don't like you, you're useless",
          "you're so annoying","this is dumb, you suck","shut up"],
  kw:["stupid","dumb","boring","useless","hate you","idiot","annoying","you suck","shut up"],
  a:["Haibo! I've stared down martial eagles, {W}. Your words are but a light breeze.",
@@ -408,7 +409,8 @@ const SCEN = [
     "Aweh aweh! Right on time — Vlokkie just left and the conversation quality up here dropped badly. Save me, {W}.",
     "Molo, {W}! Sun's where it should be, mob's fed, and now the company's arrived too. Lekker."]},
 
-{id:"byescen", protos:["goodbye, see you later, I have to go now","good night, talk to you tomorrow",
+{id:"byescen", re:/\b(good\s?night|night night|totsiens|gotta (go|run|bounce)|(have|need) to (go|run|head)|talk (soon|later|tomorrow)|chat (soon|later|tomorrow)|(i'?m|im) (off|out)(?! to)|be going now|heading (off|home|out))\b|^(bye+|cheers|later)[\s!.]*$/i,
+ protos:["goodbye, see you later, I have to go now","good night, talk to you tomorrow",
          "gotta run, bye bye","cheers, catch you later"],
  kw:["goodbye","see you later","good night","gotta go","have to go","totsiens","bye","cheers","catch you later"],
  a:["Sharp, {W}, go well! I'll be here on the mound, same time tomorrow.",
@@ -653,8 +655,8 @@ function sentiment(t){
 }
 function echo(text){
   const m = text.replace(/[.!?]+$/,"")
-    .match(/(?:\b(?:not|never|no|nie)\s+)?(?:\w+\s){0,2}\w+$/i);
-  return m ? m[0] : null;
+    .match(/(?:\b(?:not|never|no|nie)\s+)?(?:[\w']+\s+){0,2}[\w']+$/i);
+  return m ? m[0].replace(/^'+/,"") : null;
 }
 const FOLLOWUPS = [
   "But enough about the dunes — what's news your side?",
@@ -1028,10 +1030,6 @@ async function pickReplyInner(raw){
      scenario on very confident evidence (an emotional disclosure, a clear
      topic), but weak matches must not hijack them: "all good my side" is a
      reply to "how are you?", not the user asking howru. */
-  const answering = mem.pending && !/\?/.test(text);
-  /* long messages carry enough signal to route on their own merits; the
-     answer-protection is for short replies like "all good my side" */
-  const shortAnswer = answering && text.trim().split(/\s+/).length <= 8;
   /* out-of-vocabulary question gate: a question whose content includes
      words the brain has never seen ("magnets", "titanic") is about the
      wider world — unless the match is very confident, honesty beats a
@@ -1043,6 +1041,20 @@ async function pickReplyInner(raw){
      scenario that only answers questions about Tsamma (datetime, age...) */
   const isRequest = /^(tell|give|show|sing|say|share|teach|explain|describe|suggest|recommend|entertain|gooi|ask|hit|crack|cheer|come)\b/i.test(text);
   const isStatement = !isQ && !isRequest;
+  /* arithmetic is beyond a meerkat: two numbers, or a number with an
+     operator word, deflect as an out-of-domain question */
+  const nums = (text.match(/\d+([.,]\d+)?/g) || []).length;
+  if (nums >= 2 || (nums >= 1 && /\b(times|plus|minus|divided|multiplied|squared|percent|factorial|root)\b|[+*\/=^]|\d\s*x\s*\d/i.test(text))){
+    lastUserMsg = text;
+    mem.lastRoute = "clarify:q";
+    return fill(bagPick("cl:q", CLARIFY_Q));
+  }
+
+  /* questions and requests are never "answers" to her question */
+  const answering = mem.pending && !/\?/.test(text) && !isRequest;
+  /* long messages carry enough signal to route on their own merits; the
+     answer-protection is for short replies like "all good my side" */
+  const shortAnswer = answering && text.trim().split(/\s+/).length <= 8;
 
   // 3. strong classical fuzzy match beats everything else
   const senti = sentiment(t);
@@ -1065,8 +1077,10 @@ async function pickReplyInner(raw){
   if (!shortAnswer && !(isQ && oov) && !moodReport && !(hit && isStatement && BOTQ.has(hit.sc.id)) && hit && hit.score >= TH.weak) { lastUserMsg = text; mem.lastRoute = "fuzzy-weak:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
 
   // 6. she asked you something last turn: acknowledge the answer —
-  //    but a question back is not an answer
-  if (mem.pending && !isQ){
+  //    but a question back is not an answer, and keyboard mash gets the
+  //    "say that again" treatment instead of a solemn ack
+  if (mem.pending && !isQ && (qtk.some(w => DF[w] !== undefined)
+      || /\b(fine|okay|ok|alright|good|great|lekker|sharp|nothing|nope|meh|same|dandy)\b/i.test(text))){
     mem.pending = false;
     lastUserMsg = text;
     mem.lastRoute = "ack";
