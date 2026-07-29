@@ -1,23 +1,15 @@
-/* ============== TSAMMA'S BRAIN v12 ==============
-   ~84 scenarios + conversation state + classical fuzzy routing.
-   New in v11:
-   - the transformer embedding classifier (bge-small / MiniLM via
-     transformers.js) is REMOVED. Fuzzy matching reverted to classical
-     information retrieval: TF-IDF weighted cosine similarity over the
-     same prototype sentences, with a small thesaurus, stopword removal
-     and light suffix stemming. Instant startup, zero downloads.
-   - the optional WebLLM generative fallback is removed with it: this
-     file is now 100% self-contained and fully offline, first open included.
-   - more conversational: reciprocal questions after personal answers
-     ("same question back at you"), richer acknowledgments, more frequent
-     follow-ups and memory callbacks, more echoing of your own words.
+/* ============== TSAMMA'S BRAIN ==============
+   ~84 scenarios + conversation state + classical fuzzy routing (TF-IDF
+   cosine over prototype sentences — see the CLASSICAL FUZZY LAYER below).
+   Fully offline and self-contained: no network, no downloads, first open
+   included. Version history lives in CHANGELOG.md / docs/ARCHITECTURE.md.
    Reply order: continuation -> exact regex -> fuzzy(strong)
    -> scenario keywords -> ELIZA -> fuzzy(weak) -> pending-ack
    -> memory callback -> sentiment+pool */
 
-const VERSION = "v12.1";
+const VERSION = "v12.8";
 const mem = { name:null, turns:0, lastScen:null, moreIdx:0, pending:true,
-              topics:[], lastCb:0, history:[], awaitName:3 };
+              topics:[], lastCb:0, history:[], awaitName:3, lastRoute:null };
 
 function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
 function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
@@ -92,8 +84,7 @@ const SCEN = [
            `${mem.name}, of course. Logged in the sentry report the moment you told me.`])
    : (mem.awaitName = 2,
       pick(["Eish, that's the thing — you never told me! Come, out with it: what do they call you?",
-            "You know what, I've been too polite to admit I don't actually know. So tell me — what's your name?"])),
- a:["Eish, you never told me! What do they call you?"]},
+            "You know what, I've been too polite to admit I don't actually know. So tell me — what's your name?"]))},
 
 {id:"home", re:/where (do you|you) (live|stay|come from)|where are you from/i,
  protos:["where do you live","where are you from, where is your home",
@@ -709,15 +700,33 @@ const CLARIFY_POS = [
   "Aweh, that's the spirit! Give me the whole story, {W} — the pups love good news at sunset chorus.",
   "Lekker man, lekker! And then? Don't skip the juicy parts, {W}.",
 ];
+/* route + draw for the simple clarify kinds (stmt keeps its {E} echo inline) */
+const CLARIFY = { q: CLARIFY_Q, huh: CLARIFY_HUH, neg: CLARIFY_NEG, pos: CLARIFY_POS };
+function clarify(kind){
+  mem.lastRoute = "clarify:" + kind;
+  return fill(bagPick("cl:" + kind, CLARIFY[kind]));
+}
 /* mid-conversation the generic pool must not greet or wave goodbye */
-const R_CHAT = R.filter(x => x.c === "chat");
+const R_CHAT = R.chat;
+
+/* the themed pool categories double as extra answer variety for their
+   matching scenarios; exact duplicates are dropped so the shuffle bags
+   keep their no-repeat guarantee */
+{
+  const POOL_TO_SCEN = { greet:"greetscen", bye:"byescen", weather:"weather",
+                         food:"userfood", danger:"danger" };
+  for (const cat in POOL_TO_SCEN) {
+    const sc = SCEN.find(s => s.id === POOL_TO_SCEN[cat]);
+    if (sc) sc.a.push(...new Set(R[cat]));
+  }
+}
 
 /* ================= CLASSICAL FUZZY LAYER =================
-   v11: transformer embeddings are gone. Fuzzy intent matching is now
-   classical information retrieval — TF-IDF weighted cosine similarity
-   against the same prototype sentences, plus a small thesaurus, stopword
-   removal and light suffix stemming. No downloads, no network, instant
-   startup. Tune with __meer.probe("your test phrase") in the console. */
+   Fuzzy intent matching by classical information retrieval — TF-IDF
+   weighted cosine similarity against the prototype sentences, plus a
+   small thesaurus, stopword removal and light suffix stemming. No
+   downloads, no network, instant startup. Tune with
+   __meer.probe("your test phrase") in the console. */
 
 /* supplementary coverage data (js/data/protos.js), kept out of the logic
    file: extra prototype sentences and keywords per scenario */
@@ -793,8 +802,6 @@ function toks(s){
 }
 /* build document frequencies + TF-IDF vectors for every prototype */
 const DF = Object.create(null);
-const PTOKS = PROTO.map(p=>toks(p.t));
-PTOKS.forEach(t=>{ for(const w of new Set(t)) DF[w]=(DF[w]||0)+1; });
 const NP = PROTO.length;
 function idf(w){ return Math.log((NP+1)/((DF[w]||0)+1)) + 1; }
 function vecOf(tokens){
@@ -806,7 +813,12 @@ function vecOf(tokens){
   for(const w in v) v[w]/=n;
   return v;
 }
-const VECS = PTOKS.map(vecOf);
+const VECS = (() => {
+  /* the per-prototype token arrays are only needed at build time */
+  const ptoks = PROTO.map(p=>toks(p.t));
+  ptoks.forEach(t=>{ for(const w of new Set(t)) DF[w]=(DF[w]||0)+1; });
+  return ptoks.map(vecOf);
+})();
 function cos(a,b){ let s=0; for(const w in a) if(b[w]!==undefined) s+=a[w]*b[w]; return s; }
 
 /* ---- typo bridge ----
@@ -838,9 +850,9 @@ function nearestVocab(w){
   OOVCACHE.set(w, best);
   return best;
 }
-function bestMatch(qv, vecs){
+function bestMatch(qv){
   let bi=-1, bs=-1;
-  for(let i=0;i<vecs.length;i++){ const s=cos(qv,vecs[i]); if(s>bs){bs=s;bi=i;} }
+  for(let i=0;i<VECS.length;i++){ const s=cos(qv,VECS[i]); if(s>bs){bs=s;bi=i;} }
   return bi<0 ? null : { sc: SCEN[PROTO[bi].si], score: bs };
 }
 /* query-side tokenization with typo correction */
@@ -849,10 +861,10 @@ function qtoks(s){
 }
 function bestCombined(text){
   const tk = qtoks(text);
-  return tk.length ? bestMatch(vecOf(tk), VECS) : null;
+  return tk.length ? bestMatch(vecOf(tk)) : null;
 }
 /* thresholds calibrated on the eval harness (eval/run.js, 100x100) */
-let TH = { strong:0.58, weak:0.42 };
+const TH = { strong:0.58, weak:0.42 };
 let lastUserMsg = "";
 function fuzzyHit(text){
   const raw = bestCombined(text);
@@ -868,12 +880,14 @@ function fuzzyHit(text){
 }
 /* threshold-tuning helper: __meer.probe("your test phrase") logs top matches */
 function probe(text){
-  const qv = vecOf(toks(text));
+  const qv = vecOf(qtoks(text));   /* same typo bridge as real routing */
   const scored = VECS.map((v,i)=>({ id:SCEN[PROTO[i].si].id, proto:PROTO[i].t, s:cos(qv,v) }))
                      .sort((a,b)=>b.s-a.s).slice(0,5);
   console.table(scored.map(x=>({intent:x.id, score:x.s.toFixed(3), proto:x.proto})));
   return scored;
 }
+/* read by js/llm.js as the fallback status label when the clever brain
+   is enabled; unused while that layer stays dormant */
 const BRAIN_STATUS = "classical brain · "+SCEN.length+" scenarios · fully offline";
 
 /* keyword matching on stem-normalized tokens: kw "raining" matches
@@ -925,8 +939,8 @@ const RECIP_TAILS = [
 function useScen(sc){
   mem.lastScen = sc; mem.moreIdx = 0;
   mem.pending = !!sc.asks;
-  let r = sc.dyn ? fill(sc.dyn()) : pickA(sc);
-  if (sc.dyn) return r;
+  if (sc.dyn) return fill(sc.dyn());
+  let r = pickA(sc);
   if (!sc.asks && RECIP.has(sc.id) && !(sc.id==="name" && mem.name)
       && !/\?\s*$/.test(r) && Math.random()<0.4){
     r += " " + fill(bagPick("recip", RECIP_TAILS));
@@ -945,8 +959,52 @@ const BOTQ = new Set(["name","myname","home","family","age","gender","looks",
   "howwork","news","sleep","now","weekend","tech","humans","feelings",
   "lonelybot","howru"]);
 
+/* ---- name capture (pipeline step 1.5) ----
+   She asked their name (opening line / "what do they call you?"). Real
+   users often greet or chat a bit before answering, so the window spans a
+   few turns (awaitName counts them down). A word is only taken as a name
+   when it doesn't route anywhere else AND is outside the brain's own
+   vocabulary — "Thabo" passes, "busy" fails. */
+const NOTNAMES = /^(hi|hello|hey|howzit|aweh|hoezit|heita|dumela|molo|yo|ja|yebo|yes|no|nope|ok|okay|fine|good|great|lekker|sharp|shap|cool|nothing|nobody|dunno|guess|sup|nee|eish|shame|thanks|thanx|please|maybe|sure|version|bye|why|what|who|how|help|test|testing|lol|lmao|meh|yoh|sjoe|serious|srsly|really|realy|haha\w*|hmm\w*|same|average|alright|busy|tired|hungry|bored|sick|sad|happy|angry|stressed|wyd|rn|complicated|difficult|tricky|hard|weird|personal|private|nobody's|classified)$/i;
+/* out-of-vocabulary test: none of the prototype sentences contain the
+   word, so it can't be an on-topic message — likely a proper name */
+function inVocab(w){ const tk = toks(w); return !tk.length || DF[tk[0]] !== undefined; }
+function captureName(text, t){
+  if (!mem.awaitName || mem.name || /\?/.test(text)) return null;
+  mem.awaitName--;
+  /* strip courtesy wrappers ("hi ...", "..., nice to meet you") before
+     matching, so the name itself is what's left */
+  const core = text.replace(/[.!,]+/g," ").replace(/\s+/g," ").trim()
+    .replace(/^(hi|hello|hey|howzit|aweh|heita|yo) /i, "")
+    .replace(/ (nice|good|lekker) to meet (you|u)$/i, "");
+  const nm = core
+    .match(/^((?:the )?name'?s |everyone calls me |they call me |people call me |(?:you can )?call me |my name is |my name'?s |my name |i'?m |i am |iam |it'?s |its )?([a-z][a-z'-]+)( [a-z'-]+)?$/i);
+  const hasPrefix = !!(nm && nm[1]);
+  const word = nm ? nm[2] : null;
+  /* bare captures must be a single word; prefixed ones ("i'm Sannie de
+     Wet") may carry a surname — both need an out-of-vocabulary name */
+  const shapeOk = nm && (hasPrefix || !nm[3]);
+  if (!shapeOk || NOTNAMES.test(word) || inVocab(word)) return null;
+  /* an explicit prefix ("call me...", "my name...") is a clear signal;
+     bare words must also fail to route anywhere else — judged with no
+     previous-message context boost, otherwise "version" -> "Johan"
+     scores as the version topic again */
+  if (!hasPrefix){
+    if (keywordHit(t)) return null;
+    const fh = bestCombined(text);
+    if (fh && fh.score >= TH.strong) return null;
+  }
+  mem.name = capitalize(word);
+  mem.awaitName = 0;
+  const r = pick([`${mem.name}! Lekker to meet you properly. Sentries never forget a face — or a name. So what's your ${tod()} looking like, ${mem.name}?`,
+                  `Aweh, ${mem.name}! Welcome to the mound. Now we're proper chinas. What's news your side?`]);
+  mem.pending = true;
+  mem.lastRoute = "namecapture";
+  return r;
+}
+
 /* ================= the pipeline ================= */
-async function pickReplyInner(raw){
+function pickReplyInner(raw){
   mem.turns++;
   const text = raw.trim();
   const t = " "+text.toLowerCase().replace(/[^a-z' ]/g," ")+" ";
@@ -958,7 +1016,6 @@ async function pickReplyInner(raw){
   // 0a. a continuation word with no topic on the table is just social
   //     noise ("lol", "ok cool") — smile back and hand over the turn
   if (!mem.lastScen && CONT_RE.test(contText) && !mem.pending){
-    lastUserMsg = text;
     mem.lastRoute = "cont:noctx";
     return fill(bagPick("cont0", CONT_NOCTX));
   }
@@ -967,10 +1024,9 @@ async function pickReplyInner(raw){
   if (mem.lastScen && CONT_RE.test(contText)){
     const sc = mem.lastScen;
     if (sc.more && mem.moreIdx < sc.more.length)
-      { const r = fill(sc.more[mem.moreIdx++]); lastUserMsg = text; mem.lastRoute = "cont:more:"+sc.id; return r; }
-    if (/another|again|more/i.test(contText) && sc.a.length > 1)
-      { lastUserMsg = text; mem.lastRoute = "cont:again:"+sc.id; return pickA(sc); }
-    lastUserMsg = text;
+      { const r = fill(sc.more[mem.moreIdx++]); mem.lastRoute = "cont:more:"+sc.id; return r; }
+    if (/another|again|more/i.test(contText) && sc.a && sc.a.length > 1)
+      { mem.lastRoute = "cont:again:"+sc.id; return pickA(sc); }
     mem.lastRoute = "cont:generic";
     return fill(bagPick("cont", CONT_GENERIC));
   }
@@ -978,52 +1034,15 @@ async function pickReplyInner(raw){
   // 1. exact regexes (must run before name capture, so a first message
   //    like "version" or "help" hits its scenario instead of becoming a name)
   for (const sc of SCEN)
-    if (sc.re && sc.re.test(text)) { lastUserMsg = text; mem.lastRoute = "regex:"+sc.id; return useScen(sc); }
+    if (sc.re && sc.re.test(text)) { mem.lastRoute = "regex:"+sc.id; return useScen(sc); }
 
-  // 1.5 she asked their name (opening line / "what do they call you?").
-  //     Real users often greet or chat a bit before answering, so the
-  //     window spans a few turns (awaitName counts them down). A word is
-  //     only taken as a name when it doesn't route anywhere else AND is
-  //     outside the brain's own vocabulary — "Thabo" passes, "busy" fails.
-  if (mem.awaitName && !mem.name && !/\?/.test(text)){
-    mem.awaitName--;
-    /* strip courtesy wrappers ("hi ...", "..., nice to meet you") before
-       matching, so the name itself is what's left */
-    const core = text.replace(/[.!,]+/g," ").replace(/\s+/g," ").trim()
-      .replace(/^(hi|hello|hey|howzit|aweh|heita|yo) /i, "")
-      .replace(/ (nice|good|lekker) to meet (you|u)$/i, "");
-    const nm = core
-      .match(/^((?:the )?name'?s |everyone calls me |they call me |people call me |(?:you can )?call me |my name is |my name'?s |my name |i'?m |i am |iam |it'?s |its )?([a-z][a-z'-]+)( [a-z'-]+)?$/i);
-    const NOTNAMES = /^(hi|hello|hey|howzit|aweh|hoezit|heita|dumela|molo|yo|ja|yebo|yes|no|nope|ok|okay|fine|good|great|lekker|sharp|shap|cool|nothing|nobody|dunno|guess|sup|nee|eish|shame|thanks|thanx|please|maybe|sure|version|bye|why|what|who|how|help|test|testing|lol|lmao|meh|yoh|sjoe|serious|srsly|really|realy|haha\w*|hmm\w*|same|average|alright|busy|tired|hungry|bored|sick|sad|happy|angry|stressed|wyd|rn|complicated|difficult|tricky|hard|weird|personal|private|nobody's|classified)$/i;
-    /* out-of-vocabulary test: none of the prototype sentences contain the
-       word, so it can't be an on-topic message — likely a proper name */
-    const inVocab = (w) => { const tk = toks(w); return !tk.length || DF[tk[0]] !== undefined; };
-    const hasPrefix = !!(nm && nm[1]);
-    const word = nm ? nm[2] : null;
-    /* bare captures must be a single word; prefixed ones ("i'm Sannie de
-       Wet") may carry a surname — both need an out-of-vocabulary name */
-    const shapeOk = nm && (hasPrefix || !nm[3]);
-    // judge the bare word on its own — no previous-message context boost,
-    // otherwise "version" -> "Johan" scores as the version topic again
-    const fh = nm ? bestCombined(text) : null;
-    /* an explicit prefix ("call me...", "my name...") is a clear signal:
-       skip the routing checks that only guard bare-word captures */
-    if (shapeOk && !NOTNAMES.test(word) && !inVocab(word)
-        && (hasPrefix || (!keywordHit(t) && !(fh && fh.score >= TH.strong)))){
-      mem.name = capitalize(word);
-      mem.awaitName = 0;
-      lastUserMsg = text;
-      const r = pick([`${mem.name}! Lekker to meet you properly. Sentries never forget a face — or a name. So what's your ${tod()} looking like, ${mem.name}?`,
-                      `Aweh, ${mem.name}! Welcome to the mound. Now we're proper chinas. What's news your side?`]);
-      mem.pending = true;
-      mem.lastRoute = "namecapture";
-      return r;
-    }
-  } else if (mem.awaitName && mem.name) mem.awaitName = 0;
+  // 1.5 name-capture window (see captureName above)
+  const captured = captureName(text, t);
+  if (captured) return captured;
 
   // 2. name capture must run before generic ELIZA
   const nameM = text.match(ELIZA[0][0]);
-  if (nameM) { lastUserMsg = text; mem.pending = false; mem.awaitName = 0; mem.lastRoute = "eliza:name"; return ELIZA[0][1](nameM); }
+  if (nameM) { mem.pending = false; mem.awaitName = 0; mem.lastRoute = "eliza:name"; return ELIZA[0][1](nameM); }
 
   /* dialogue state: she just asked a question and this is not a question
      back — the message is most likely an ANSWER. Answers still route to a
@@ -1044,11 +1063,8 @@ async function pickReplyInner(raw){
   /* arithmetic is beyond a meerkat: two numbers, or a number with an
      operator word, deflect as an out-of-domain question */
   const nums = (text.match(/\d+([.,]\d+)?/g) || []).length;
-  if (nums >= 2 || (nums >= 1 && /\b(times|plus|minus|divided|multiplied|squared|percent|factorial|root)\b|[+*\/=^]|\d\s*x\s*\d/i.test(text))){
-    lastUserMsg = text;
-    mem.lastRoute = "clarify:q";
-    return fill(bagPick("cl:q", CLARIFY_Q));
-  }
+  if (nums >= 2 || (nums >= 1 && /\b(times|plus|minus|divided|multiplied|squared|percent|factorial|root)\b|[+*\/=^]|\d\s*x\s*\d/i.test(text)))
+    return clarify("q");
 
   /* questions and requests are never "answers" to her question */
   const answering = mem.pending && !/\?/.test(text) && !isRequest;
@@ -1060,21 +1076,25 @@ async function pickReplyInner(raw){
   const senti = sentiment(t);
   const moodReport = isStatement && senti !== 0 && qtk.length <= 3;
   const hit = (moodReport && qtk.length <= 1) ? null : fuzzyHit(text);
+  /* a statement landing on a question-only scenario needs extra evidence */
+  const botqStatement = hit && isStatement && BOTQ.has(hit.sc.id);
   const strongBar = TH.strong + (shortAnswer ? 0.1 : 0) + (isQ && oov ? 0.1 : 0)
-    + (hit && isStatement && BOTQ.has(hit.sc.id) ? 0.12 : 0)
+    + (botqStatement ? 0.12 : 0)
     + (moodReport ? 0.1 : 0);
-  if (hit && hit.score >= strongBar) { lastUserMsg = text; mem.lastRoute = "fuzzy-strong:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
+  if (hit && hit.score >= strongBar) { mem.lastRoute = "fuzzy-strong:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
 
   // 4. scenario keywords (before ELIZA so 'can you give me advice' finds advice)
   const kh = keywordHit(t, shortAnswer ? 2 : 1);
-  if (kh) { lastUserMsg = text; mem.lastRoute = "keyword:"+kh.id; return useScen(kh); }
+  if (kh) { mem.lastRoute = "keyword:"+kh.id; return useScen(kh); }
 
   // 5. ELIZA reflections, then weak fuzzy
   for (let i = 1; i < ELIZA.length; i++){
     const m = text.match(ELIZA[i][0]);
-    if (m) { lastUserMsg = text; mem.pending = false; mem.lastRoute = "eliza:"+i; return ELIZA[i][1](m); }
+    if (m) { mem.pending = false; mem.lastRoute = "eliza:"+i; return ELIZA[i][1](m); }
   }
-  if (!shortAnswer && !(isQ && oov) && !moodReport && !(hit && isStatement && BOTQ.has(hit.sc.id)) && hit && hit.score >= TH.weak) { lastUserMsg = text; mem.lastRoute = "fuzzy-weak:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
+  if (!shortAnswer && !(isQ && oov) && !moodReport && !botqStatement
+      && hit && hit.score >= TH.weak)
+    { mem.lastRoute = "fuzzy-weak:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
 
   // 6. she asked you something last turn: acknowledge the answer —
   //    but a question back is not an answer, and keyboard mash gets the
@@ -1082,7 +1102,6 @@ async function pickReplyInner(raw){
   if (mem.pending && !isQ && (qtk.some(w => DF[w] !== undefined)
       || /\b(fine|okay|ok|alright|good|great|lekker|sharp|nothing|nope|meh|same|dandy)\b/i.test(text))){
     mem.pending = false;
-    lastUserMsg = text;
     mem.lastRoute = "ack";
     const e = echo(text);
     return fill(bagPick("acks", ACKS)) + (e ? `"${capitalize(e)}" — ja. ` : "") + fill(bagPick("acktails", ACK_TAILS));
@@ -1092,7 +1111,6 @@ async function pickReplyInner(raw){
   if (mem.topics.length && mem.turns - mem.lastCb > 4 && Math.random() < 0.45){
     mem.lastCb = mem.turns;
     const tp = mem.topics.shift();
-    lastUserMsg = text;
     mem.lastRoute = "callback";
     return fill(bagPick("cb", CALLBACKS)).replace("{T}", tp);
   }
@@ -1103,9 +1121,8 @@ async function pickReplyInner(raw){
   //    statements get an echo + clarifying question. The random pool only
   //    fires as a variety valve right after a clarify, and then only with
   //    neutral "chat" lines — no greeting or goodbye junk mid-conversation.
-  lastUserMsg = text;
-  if (senti < 0){ mem.lastRoute = "clarify:neg"; return fill(bagPick("cl:neg", CLARIFY_NEG)); }
-  if (senti > 0){ mem.lastRoute = "clarify:pos"; return fill(bagPick("cl:pos", CLARIFY_POS)); }
+  if (senti < 0) return clarify("neg");
+  if (senti > 0) return clarify("pos");
   const prev = mem.history.length ? mem.history[mem.history.length-1].route : null;
   const justClarified = prev && prev.startsWith("clarify");
   if (!justClarified){
@@ -1114,15 +1131,9 @@ async function pickReplyInner(raw){
     /* a well-formed question about the wider world deserves the honest
        "beyond my dune" rather than the "say that again" reserved for
        actual gibberish */
-    if (isQ && text.trim().split(/\s+/).length >= 3){
-      mem.lastRoute = "clarify:q"; return fill(bagPick("cl:q", CLARIFY_Q));
-    }
-    if (!tkn.length || known / tkn.length < 0.34){
-      mem.lastRoute = "clarify:huh"; return fill(bagPick("cl:huh", CLARIFY_HUH));
-    }
-    if (isQ){
-      mem.lastRoute = "clarify:q"; return fill(bagPick("cl:q", CLARIFY_Q));
-    }
+    if (isQ && text.trim().split(/\s+/).length >= 3) return clarify("q");
+    if (!tkn.length || known / tkn.length < 0.34) return clarify("huh");
+    if (isQ) return clarify("q");
     const e = echo(text);
     if (e){
       remember(e);
@@ -1130,19 +1141,25 @@ async function pickReplyInner(raw){
       return fill(bagPick("cl:stmt", CLARIFY_STMT).replaceAll("{E}", e));
     }
   }
-  let reply = bagPick("pool", R_CHAT).t;
+  let reply = bagPick("pool", R_CHAT);
   if (mem.name && Math.random()<0.2 && !reply.includes(mem.name))
     reply = reply.replace(/\b(boet|bru|china|swaer|my friend|ou maat|bokkie|my bru)\b/, mem.name);
   if (Math.random()<0.4) reply += " " + fill(bagPick("followups", FOLLOWUPS));
   mem.lastRoute = "pool:chat";
   return reply;
 }
+/* async is the public contract (ui.js/llm.js/eval all await), even though
+   the classical pipeline itself is synchronous */
 async function pickReply(raw){
-  const r = await pickReplyInner(raw);
+  const r = pickReplyInner(raw);
+  lastUserMsg = raw.trim();  /* becomes the context boost for the NEXT turn */
   /* dialogue state: any reply that ends on a question means Tsamma asked
      the user something — the next message is probably an answer, and should
      be acknowledged rather than fed to the generic pool */
   mem.pending = mem.pending || /\?\s*$/.test(r);
+  /* only the last entry's route is read today (the just-clarified check),
+     but the full {u,a,route} window is kept as conversation context for
+     the clever-brain layer */
   mem.history.push({ u: raw, a: r, route: mem.lastRoute });
   if (mem.history.length > 8) mem.history.shift();
   return r;

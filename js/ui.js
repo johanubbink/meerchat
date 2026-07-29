@@ -1,11 +1,12 @@
 /* ---------- animation ---------- */
+const IDLE = "tsamma · on sentry duty";
 const seq = [
-  ["sentry","tsamma · on sentry duty",1100], ["blink","tsamma · on sentry duty",140],
-  ["sentry","tsamma · on sentry duty",900],  ["look_left","checking left...",850],
-  ["sentry","tsamma · on sentry duty",350],  ["look_right","checking right...",850],
-  ["sentry","tsamma · on sentry duty",500],  ["flick","tail flick",300],
-  ["sentry","tsamma · on sentry duty",700],  ["blink","tsamma · on sentry duty",140],
-  ["sentry","tsamma · on sentry duty",600],  ["duck","is that ou skelm?!",750],
+  ["sentry",IDLE,1100], ["blink",IDLE,140],
+  ["sentry",IDLE,900],  ["look_left","checking left...",850],
+  ["sentry",IDLE,350],  ["look_right","checking right...",850],
+  ["sentry",IDLE,500],  ["flick","tail flick",300],
+  ["sentry",IDLE,700],  ["blink",IDLE,140],
+  ["sentry",IDLE,600],  ["duck","is that ou skelm?!",750],
   ["sentry","all clear",1200],
 ];
 const art = document.getElementById("art");
@@ -15,17 +16,20 @@ let fi = 0;
 function tick() {
   const [name, caption, hold] = seq[fi];
   art.textContent = F[name]; capEl.textContent = caption;
-  if (still) return;
   fi = (fi + 1) % seq.length;
   setTimeout(tick, hold);
 }
-tick();
+if (still) { art.textContent = F.sentry; capEl.textContent = IDLE; }
+else tick();
+
+/* the frames' true character grid, measured once */
+const ROWS = F.sentry.split("\n").length;
+const COLS = Math.max(...Object.values(F).flatMap(f => f.split("\n").map(l => l.length)));
 function fitArt() {
-  const cols = 144, rows = F.sentry.split("\n").length;
   const w = Math.min(document.body.clientWidth - 8, 760);
   const h = window.innerHeight * 0.40;
-  const fsW = w / (cols * 0.62);
-  const fsH = h / (rows * 1.02);
+  const fsW = w / (COLS * 0.62);
+  const fsH = h / (ROWS * 1.02);
   art.style.fontSize = Math.max(3, Math.min(10, fsW, fsH)) + "px";
 }
 fitArt();
@@ -35,6 +39,7 @@ window.addEventListener("resize", fitArt);
 const chat = document.getElementById("chat");
 const inp  = document.getElementById("inp");
 const send = document.getElementById("send");
+/* returns the bubble's text node, so a caller can update the text later */
 function bubble(text, whoCls) {
   const d = document.createElement("div");
   d.className = "msg " + (whoCls === "me" ? "me" : "kat");
@@ -43,10 +48,11 @@ function bubble(text, whoCls) {
     w.className = "who"; w.textContent = "tsamma";
     d.appendChild(w);
   }
-  d.appendChild(document.createTextNode(text));
+  const body = document.createTextNode(text);
+  d.appendChild(body);
   chat.appendChild(d);
   chat.scrollTop = chat.scrollHeight;
-  return d;
+  return body;
 }
 let busy = false;
 function go() {
@@ -59,9 +65,10 @@ function go() {
   const delay = 500 + Math.random() * 700;
   setTimeout(async () => {
     let reply;
+    /* getReply exists only when the clever-brain layer (llm.js) is loaded */
     try { reply = await (typeof getReply === "function" ? getReply(text) : pickReply(text)); }
     catch (e) { console.warn(e); reply = "Eish, the wind took my words there. Say again, " + who() + "?"; }
-    typing.lastChild.textContent = reply;
+    typing.textContent = reply;
     chat.scrollTop = chat.scrollHeight;
     busy = false;
   }, delay);

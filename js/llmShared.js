@@ -1,7 +1,16 @@
-/* Prompt-building + sanitizer ported verbatim from js/llm.js, so the Node
-   evaluation exercises the exact production prompt. Keep in sync with
-   js/llm.js (PERSONA, memoryNote, groundingNote, sanitize). */
-"use strict";
+/* ============== CLEVER-BRAIN SHARED PROMPT CODE ==============
+   The single source for the persona bible, prompt building and reply
+   sanitizing, used by BOTH sides of the clever brain:
+   - the browser layer (js/llm.js, loaded as a classic script AFTER this
+     file — note: neither is wired into index.html while the LLM layer
+     stays dormant), and
+   - the Node eval harness (eval/llm_convo.js, via require()).
+   The module.exports tail below is the Node-side mirror of brain.js's
+   window.__meer guard: a classic script in the browser, a CommonJS module
+   in Node, no import/export syntax anywhere.
+
+   Everything here is a pure function of its arguments: no DOM, no closure
+   over brain or LLM state (mem and hist are passed in). */
 
 const PERSONA = `You are Tsamma, a real meerkat: head sentry of the Duinbos mob in the Kgalagadi (Kalahari desert), chatting through "the glowing rectangle" from the top of your sand mound.
 
@@ -44,6 +53,18 @@ function groundingNote(route, scripted) {
   return `Your scripted instinct answered: "${scripted}". Use its facts and mood as your basis, but say it your own way, fitted to the conversation. Don't repeat phrasing you've already used.`;
 }
 
+/* persona bible + memory note + route-derived grounding + last turns */
+function buildMessages(text, scripted, route, mem, hist) {
+  const sys = PERSONA + "\n\nCURRENT NOTES: " + memoryNote(mem) + "\n" + groundingNote(route, scripted);
+  const msgs = [{ role: "system", content: sys }];
+  for (const h of hist) {
+    msgs.push({ role: "user", content: h.u });
+    msgs.push({ role: "assistant", content: h.a });
+  }
+  msgs.push({ role: "user", content: text });
+  return msgs;
+}
+
 const BAN = /\b(as an? (ai|assistant|language model)|i('m| am) an? (ai|bot|assistant|language model)|language model|chatgpt|openai|anthropic|llama|qwen|system prompt|scripted instinct)\b/i;
 
 function sanitize(out, fallback, hist) {
@@ -51,11 +72,12 @@ function sanitize(out, fallback, hist) {
   let s = out.replace(/<think>[\s\S]*?<\/think>/g, "").trim()
     .replace(/^["'“]+|["'”]+$/g, "")
     .replace(/^(tsamma|assistant)\s*:\s*/i, "")
-    .replace(/\*[^*]{0,40}\*/g, "")
+    .replace(/\*[^*]{0,40}\*/g, "")                    /* no roleplay asterisks */
     .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\uFE0F]/gu, "")
     .replace(/\s+([.,!?])/g, "$1")
     .replace(/\s+/g, " ").trim();
   if (!s || BAN.test(s) || /\b(USER|SYSTEM)\s*:/.test(s)) return fallback;
+  /* keep it chat-sized: cut at a sentence boundary past ~360 chars */
   if (s.length > 400) {
     const m = s.slice(0, 400).match(/[\s\S]*[.!?]/);
     s = m ? m[0] : s.slice(0, 360);
@@ -65,4 +87,5 @@ function sanitize(out, fallback, hist) {
   return s || fallback;
 }
 
-module.exports = { PERSONA, memoryNote, groundingNote, sanitize };
+if (typeof module !== "undefined" && module.exports)
+  module.exports = { PERSONA, memoryNote, groundingNote, buildMessages, sanitize };

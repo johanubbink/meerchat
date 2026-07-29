@@ -21,12 +21,13 @@ function mulberry32(seed) {
 
 /* fixed clock: Wednesday 2026-01-14 10:00 local (morning) */
 const FIXED = [2026, 0, 14, 10, 0, 0];
+const FIXED_MS = new Date(...FIXED).getTime();
 class FakeDate extends Date {
   constructor(...a) {
     if (a.length === 0) super(...FIXED);
     else super(...a);
   }
-  static now() { return new Date(...FIXED).getTime(); }
+  static now() { return FIXED_MS; }
 }
 
 let compiled = null;
@@ -35,9 +36,8 @@ function compile() {
     fs.readFileSync(path.join(ROOT, "js/data/responses.js"), "utf8") +
     fs.readFileSync(path.join(ROOT, "js/data/protos.js"), "utf8") +
     fs.readFileSync(path.join(ROOT, "js/brain.js"), "utf8") +
-    ';__exports = { pickReply, mem, SCEN, PROTO, toks, fuzzyHit, TH, tune };';
+    ';__exports = { pickReply, mem, SCEN, PROTO, toks, fuzzyHit, TH, tune, bagPick, bags, R_CHAT, VERSION };';
   compiled = new vm.Script(src, { filename: "brain-under-test.js" });
-  return compiled;
 }
 
 function loadBrain(seed) {
@@ -58,7 +58,5 @@ function loadBrain(seed) {
   return ctx.__exports;
 }
 
-/* invalidate the compiled script (used when comparing code variants) */
-loadBrain.reload = () => { compiled = null; };
 loadBrain.mulberry32 = mulberry32;
 module.exports = loadBrain;
