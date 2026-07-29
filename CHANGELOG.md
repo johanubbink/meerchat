@@ -69,7 +69,16 @@ CLAUDE.md): the minor bumps on every change to the shipped site, and the
   loads no `llm*.js` and nothing is downloaded on page open (now enforced
   by a test).
 
-## Unversioned (tests & eval tooling)
+## Unversioned (tests, eval tooling & docs)
+
+- Eval-side cleanups: shared CLI parser, per-conversation transcript dumps,
+  a Map-based intent lookup in the simulator, `llm_convo.js` output paths
+  anchored to the repo (with the meta file no longer able to overwrite the
+  transcript), and logged user-simulator failures. Output byte-identical.
+- Docs: ARCHITECTURE.md documents the dual-load guard pattern, the
+  category-grouped pool wire-in, the two-tier testing story and the
+  two-tag clever-brain re-enable recipe; eval/README.md fixes the stale
+  loadBrain description (protos.js was missing).
 
 - New zero-dependency unit-test suite: `node --test test/`. Pins the
   brain's routing grammar, name capture, dialogue state, shuffle-bag

@@ -11,16 +11,23 @@ working when opened directly from disk (`file://`).
 index.html          shell: markup + script tags, loaded in order
 css/style.css       all styling (desert theme, chat bubbles, input bar)
 js/data/frames.js   ASCII-art animation frames (F)
-js/data/responses.js  1000-line generic fallback pool (R), tagged by category
+js/data/responses.js  generic fallback pool (R), grouped by category; the
+                      themed categories feed scenario answer pools
 js/data/protos.js   extra prototype sentences + keywords per scenario (data)
 js/brain.js         all chat logic, no DOM access (testable in Node)
+js/llmShared.js     clever-brain prompt code shared with the eval (persona
+                    bible, prompt builder, sanitizer; pure functions)
 js/llm.js           clever brain: optional on-device LLM layer (v13, not loaded)
 js/ui.js            DOM wiring: animation loop, art scaling, chat bubbles
+test/               node:test suite pinning brain behavior (node --test test/)
 ```
 
-Scripts are classic (non-module) tags so `file://` keeps working. `js/brain.js`
-never touches `document`/`window` except to export `window.__meer` when a
-window exists, so Node tests can load it directly.
+Scripts are classic (non-module) tags so `file://` keeps working. Two files
+use a dual-load guard so the same source runs in the browser and in Node:
+`js/brain.js` never touches `document`/`window` except to export
+`window.__meer` when a window exists (the eval and the unit tests load it in
+a bare vm), and `js/llmShared.js` ends with a `module.exports` tail that is
+inert in the browser and makes it a CommonJS module under `require()`.
 
 ## The brain (js/brain.js, v12)
 
@@ -37,8 +44,11 @@ remembered topics, short history with per-reply route provenance
   parts), `asks` (Tsamma asked the user a question), `dyn` (dynamic answer,
   e.g. recalling the user's name). `js/data/protos.js` merges in ~900 extra
   prototypes and ~580 extra keywords at startup.
-- `R`: 1000 generic replies; only the neutral `chat` category is still used,
-  as a rare variety valve.
+- `R`: 1000 generic replies grouped by category. The neutral `chat` pool is
+  the rare variety valve behind the fallback chain (`pool:chat`); the themed
+  categories (greet/bye/danger/weather/food) are merged into the answer
+  pools of their matching scenarios at load time, deduplicated so the
+  shuffle bags keep their no-repeat guarantee.
 - `ELIZA`: reflection rules ("i feel X" → "Why do you feel X?") with pronoun
   swapping and object-pronoun repair ("chatting to I" → "to me").
 - Clarify pools: honest in-character fallbacks per situation — question
@@ -104,20 +114,38 @@ fill from the clock.
 - `fitArt()` scales the ASCII art to the viewport.
 - Chat: user bubble, "..." typing indicator, reply after a 500–1200 ms delay.
 
-## Evaluation
+## Testing & evaluation
 
-`eval/` simulates 100 seeded conversations x 100 messages against the
-unmodified production brain and scores every response deterministically; an
-LLM-judge protocol scores sampled transcripts. See `eval/README.md` and
-`eval/results/HISTORY.md` for the metric progression. Run `node eval/run.js`.
+Two tiers:
+
+- **Unit tests** (`node --test test/`, zero dependencies, ~2 s): pin the
+  brain's behavior — the `mem.lastRoute` grammar, greeting/OOD/continuation
+  routing, name capture and recall, the pending-question state machine,
+  shuffle-bag guarantees, template hygiene, memory caps and thresholds —
+  plus static guards for the hard constraints (no DOM in brain.js, no
+  modules in `js/`, no `llm*.js` script tag in `index.html`, every `?v=`
+  equal to `VERSION`). They reuse `eval/lib/loadBrain.js`, so they exercise
+  the same seeded vm sandbox as the eval.
+- **Scored eval** (`eval/`): simulates 100 seeded conversations x 100
+  messages against the unmodified production brain and scores every response
+  deterministically against a frozen rubric; an LLM-judge protocol scores
+  sampled transcripts. See `eval/README.md` and `eval/results/HISTORY.md`
+  for the metric progression. Run `node eval/run.js`.
 
 ## The clever brain (js/llm.js, v13 prototype)
 
 **Currently dormant: `index.html` does not load `js/llm.js`**, so visitors
 get the classical v12 brain and download nothing. The auto-download of
 multi-GB WebLLM weights on page load was too heavy to ship enabled. To
-re-enable, add `<script src="js/llm.js"></script>` between `brain.js` and
-`ui.js` in `index.html` (ui.js prefers `getReply()` when it exists).
+re-enable, add TWO tags between `brain.js` and `ui.js` in `index.html` —
+`<script src="js/llmShared.js?v=...">` then `<script src="js/llm.js?v=...">`
+(ui.js prefers `getReply()` when it exists) — and update the expected
+script-tag list in `test/static-guards.test.js`, which otherwise fails the
+build on any `llm*.js` tag by design.
+
+The prompt-building and sanitizing code lives in `js/llmShared.js` and is
+the exact code the Node eval harness (`eval/llm_convo.js`) runs — the E2E
+eval exercises the production prompt by construction.
 
 Progressive enhancement: an on-device LLM composes Tsamma's replies,
 grounded in the scripted brain. brain.js keeps running unchanged as router,

@@ -13,9 +13,11 @@ node eval/run.js --convs 10 --msgs 50 --seed 7 --transcripts 3
 
 ## How it works
 
-- `lib/loadBrain.js` loads `js/data/responses.js` + `js/brain.js` into a vm
-  context per conversation (fresh memory), with `Math.random` seeded
-  (mulberry32) and `Date` fixed, so every run is identical.
+- `lib/loadBrain.js` loads `js/data/responses.js` + `js/data/protos.js` +
+  `js/brain.js` into a vm context per conversation (fresh memory), with
+  `Math.random` seeded (mulberry32) and `Date` fixed, so every run is
+  identical. The unit-test suite (`node --test test/`) reuses this same
+  loader, so both tiers exercise the identical sandbox.
 - `lib/simulator.js` is a seeded user simulator that reacts to the bot:
   it greets, gives a name, asks scenario questions, answers her questions,
   sends follow-ups after jokes/stories, makes smalltalk, drops out-of-domain
@@ -34,7 +36,7 @@ node eval/run.js --convs 10 --msgs 50 --seed 7 --transcripts 3
 - `intentAccuracy`  in-domain questions routed to an acceptable scenario
 - `oodMisfireRate`  out-of-domain messages answered by an unrelated scenario
 - `reactiveGoodRate` user answers to her questions handled as such
-- `junkPoolRate`    replies drawn from the random 1000-line pool
+- `junkPoolRate`    replies drawn from the generic chat pool
 - `repetitionRate`  verbatim repeated replies within a conversation
 - `nameCaptureRate` / `nameRecallRate`  name memory across the conversation
 
