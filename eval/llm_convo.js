@@ -18,16 +18,19 @@ const path = require("path");
 const loadBrain = require("./lib/loadBrain");
 const { buildMessages, sanitize } = require("../js/llmShared");
 const PERSONAS = require("./lib/personas");
+const parseArgs = require("./lib/args");
 
-const args = {};
-for (let i = 2; i < process.argv.length; i += 2)
-  args[process.argv[i].replace(/^--/, "")] = process.argv[i + 1];
+const args = parseArgs(process.argv);
 
 const ENDPOINT = args.endpoint || "http://127.0.0.1:8080/v1";
 const TURNS = +(args.turns || 20);
 const PKEY = args.persona || "chommie";
 const SEED = +(args.seed || 1);
-const OUT = args.out || `eval/results/llm/${PKEY}.txt`;
+/* anchored on this file, not the cwd */
+const OUT = path.resolve(__dirname, args.out || `results/llm/${PKEY}.txt`);
+/* the meta file sits next to the transcript; never overwrite the transcript
+   itself when --out lacks a .txt suffix */
+const META = OUT.endsWith(".txt") ? OUT.slice(0, -4) + ".json" : OUT + ".json";
 
 async function chat(messages, opts = {}) {
   const body = {
@@ -70,7 +73,7 @@ function buildUserMessages(persona, transcript) {
   const brain = loadBrain(SEED * 2654435761);
   const hist = [];          /* {u,a} pairs for Tsamma's context window */
   const transcript = [];    /* {who,text} full log */
-  const stats = { genMs: [], tokS: [], fallbacks: 0 };
+  const stats = { fallbacks: 0, userFallbacks: 0 };
   const persona = PERSONAS[PKEY];
   if (!persona) throw new Error("unknown persona " + PKEY);
 
@@ -82,7 +85,12 @@ function buildUserMessages(persona, transcript) {
       const r = await chat(uMsgs, { temp: 1.0, max: 40 });
       userText = r.text.replace(/<think>[\s\S]*?<\/think>/g, "").trim()
         .replace(/^["'“]+|["'”]+$/g, "").replace(/\n[\s\S]*$/, "").trim();
-    } catch (e) { userText = "ok"; }
+    } catch (e) {
+      /* a dead endpoint must be visible, not masquerade as a real turn */
+      console.error(`  [${PKEY}] user simulator failed (${e.message}), sending "ok"`);
+      stats.userFallbacks++;
+      userText = "ok";
+    }
     if (!userText) userText = "ok";
     transcript.push({ who: "user", text: userText });
 
@@ -92,16 +100,12 @@ function buildUserMessages(persona, transcript) {
 
     /* 3. clever brain generates the actual reply */
     const tMsgs = buildMessages(userText, scripted, route, brain.mem, hist);
-    let tsammaText, usage;
+    let tsammaText;
     try {
       const r = await chat(tMsgs, { temp: 0.9, max: 120 });
       const clean = sanitize(r.text, scripted, hist);
       if (clean === scripted) stats.fallbacks++;
       tsammaText = clean;
-      usage = r.usage;
-      if (usage && usage.completion_tokens && r.usage) {
-        stats.tokS.push(usage.completion_tokens);
-      }
     } catch (e) {
       tsammaText = scripted; stats.fallbacks++;
     }
@@ -122,9 +126,10 @@ function buildUserMessages(persona, transcript) {
   const meta = {
     persona: PKEY, turns: TURNS,
     fallbackRate: +(stats.fallbacks / TURNS * 100).toFixed(1),
+    userFallbacks: stats.userFallbacks,
     nameKnown: brain.mem.name || null,
     topics: brain.mem.topics,
   };
-  fs.writeFileSync(OUT.replace(/\.txt$/, ".json"), JSON.stringify(meta, null, 1));
+  fs.writeFileSync(META, JSON.stringify(meta, null, 1));
   console.log(JSON.stringify(meta));
 })();

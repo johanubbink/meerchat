@@ -47,6 +47,7 @@ function makeSimulator(rng, bank, opts = {}) {
      the opening move and a mid-chat "bye" would falsely end the flow. */
   const mainIntents = bank.intents.filter(
     (x) => x.id !== "greetscen" && x.id !== "byescen");
+  const intentById = new Map(bank.intents.map((x) => [x.id, x]));
   const intentCycler = makeShuffledCycler(rng, mainIntents);
   const perIntentMsg = new Map();
   const msgOf = (intent) => {
@@ -63,7 +64,7 @@ function makeSimulator(rng, bank, opts = {}) {
   let lastIntentAsked = null;   // id of last scenario question we asked
   let gaveName = false;
   let askedMyName = false;
-  let total = opts.msgs || 100;
+  const total = opts.msgs || 100;
 
   /* opening style: A greet-then-name, B name-first, C greet-and-ignore */
   const opening = rng() < 0.4 ? "A" : rng() < 0.45 ? "B" : "C";
@@ -82,12 +83,12 @@ function makeSimulator(rng, bank, opts = {}) {
 
     /* fixed closing: thanks, then bye */
     if (last) {
-      const it = bank.intents.find((x) => x.id === "byescen");
+      const it = intentById.get("byescen");
       lastIntentAsked = "byescen";
       return { t: msgOf(it), label: "intent", acceptable: ["byescen"] };
     }
     if (secondToLast) {
-      const it = bank.intents.find((x) => x.id === "thanks");
+      const it = intentById.get("thanks");
       lastIntentAsked = "thanks";
       return { t: msgOf(it), label: "intent", acceptable: ["thanks"] };
     }
@@ -99,7 +100,7 @@ function makeSimulator(rng, bank, opts = {}) {
         return { t: pick(bank.reactive.namegive).replace("NAME", name),
                  label: "namegive", name };
       }
-      const it = bank.intents.find((x) => x.id === "greetscen");
+      const it = intentById.get("greetscen");
       lastIntentAsked = "greetscen";
       return { t: msgOf(it), label: "intent",
                acceptable: ["greetscen", "howru"] };
@@ -128,7 +129,7 @@ function makeSimulator(rng, bank, opts = {}) {
     /* late-conversation memory check, once */
     if (!askedMyName && gaveName && step > total * 0.5 && rng() < 0.08) {
       askedMyName = true;
-      const it = bank.intents.find((x) => x.id === "myname");
+      const it = intentById.get("myname");
       lastIntentAsked = "myname";
       return { t: msgOf(it), label: "myname", name };
     }
@@ -145,7 +146,7 @@ function makeSimulator(rng, bank, opts = {}) {
     return { t: oodMsg(), label: "ood" };
   }
 
-  return { next, name, opening };
+  return { next };
 }
 
-module.exports = { makeSimulator, NAMES };
+module.exports = { makeSimulator };
