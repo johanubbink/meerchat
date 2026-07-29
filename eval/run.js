@@ -14,10 +14,9 @@ const path = require("path");
 const loadBrain = require("./lib/loadBrain");
 const { makeSimulator } = require("./lib/simulator");
 const { scoreResponse, normalizeReply, aggregate, parseRoute } = require("./lib/metrics");
+const parseArgs = require("./lib/args");
 
-const args = {};
-for (let i = 2; i < process.argv.length; i += 2)
-  args[process.argv[i].replace(/^--/, "")] = process.argv[i + 1];
+const args = parseArgs(process.argv);
 
 const CONVS = +(args.convs || 100);
 const MSGS = +(args.msgs || 100);
@@ -45,7 +44,7 @@ async function runConversation(ci) {
     if (turn.label === "namegive")
       ctx.nameStored = brain.mem.name === turn.name;
     if (turn.label === "myname")
-      ctx.nameRecalled = turn.name ? reply.includes(turn.name) : false;
+      ctx.nameRecalled = reply.includes(turn.name);   /* myname turns always carry a name */
 
     const rec = {
       conv: ci, i: mi, u: turn.t, a: reply, route,
@@ -64,10 +63,12 @@ async function runConversation(ci) {
 (async () => {
   const t0 = process.hrtime.bigint();
   const all = [];
+  const byConv = [];
   const perConv = [];
   for (let ci = 0; ci < CONVS; ci++) {
     const recs = await runConversation(ci);
     all.push(...recs);
+    byConv.push(recs);
     perConv.push(aggregate(recs).overall);
   }
   const ms = Number(process.hrtime.bigint() - t0) / 1e6;
@@ -101,8 +102,7 @@ async function runConversation(ci) {
     const dir = path.join(__dirname, "results", "transcripts");
     fs.mkdirSync(dir, { recursive: true });
     for (let ci = 0; ci < Math.min(TRANSCRIPTS, CONVS); ci++) {
-      const recs = all.filter((r) => r.conv === ci);
-      const lines = recs.flatMap((r) => [
+      const lines = byConv[ci].flatMap((r) => [
         `USER: ${r.u}`,
         `TSAMMA: ${r.a}`,
         `   [${r.label} -> ${r.route} | score ${r.finalScore.toFixed(2)}]`, ""]);
