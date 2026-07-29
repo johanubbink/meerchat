@@ -15,7 +15,7 @@
    -> scenario keywords -> ELIZA -> fuzzy(weak) -> pending-ack
    -> memory callback -> sentiment+pool */
 
-const VERSION = "v12.2";
+const VERSION = "v12.3";
 const mem = { name:null, turns:0, lastScen:null, moreIdx:0, pending:true,
               topics:[], lastCb:0, history:[], awaitName:3 };
 
@@ -710,7 +710,7 @@ const CLARIFY_POS = [
   "Lekker man, lekker! And then? Don't skip the juicy parts, {W}.",
 ];
 /* mid-conversation the generic pool must not greet or wave goodbye */
-const R_CHAT = R.filter(x => x.c === "chat");
+const R_CHAT = R.chat;
 
 /* ================= CLASSICAL FUZZY LAYER =================
    v11: transformer embeddings are gone. Fuzzy intent matching is now
@@ -1130,7 +1130,7 @@ async function pickReplyInner(raw){
       return fill(bagPick("cl:stmt", CLARIFY_STMT).replaceAll("{E}", e));
     }
   }
-  let reply = bagPick("pool", R_CHAT).t;
+  let reply = bagPick("pool", R_CHAT);
   if (mem.name && Math.random()<0.2 && !reply.includes(mem.name))
     reply = reply.replace(/\b(boet|bru|china|swaer|my friend|ou maat|bokkie|my bru)\b/, mem.name);
   if (Math.random()<0.4) reply += " " + fill(bagPick("followups", FOLLOWUPS));
