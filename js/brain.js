@@ -1,23 +1,15 @@
-/* ============== TSAMMA'S BRAIN v12 ==============
-   ~84 scenarios + conversation state + classical fuzzy routing.
-   New in v11:
-   - the transformer embedding classifier (bge-small / MiniLM via
-     transformers.js) is REMOVED. Fuzzy matching reverted to classical
-     information retrieval: TF-IDF weighted cosine similarity over the
-     same prototype sentences, with a small thesaurus, stopword removal
-     and light suffix stemming. Instant startup, zero downloads.
-   - the optional WebLLM generative fallback is removed with it: this
-     file is now 100% self-contained and fully offline, first open included.
-   - more conversational: reciprocal questions after personal answers
-     ("same question back at you"), richer acknowledgments, more frequent
-     follow-ups and memory callbacks, more echoing of your own words.
+/* ============== TSAMMA'S BRAIN ==============
+   ~84 scenarios + conversation state + classical fuzzy routing (TF-IDF
+   cosine over prototype sentences — see the CLASSICAL FUZZY LAYER below).
+   Fully offline and self-contained: no network, no downloads, first open
+   included. Version history lives in CHANGELOG.md / docs/ARCHITECTURE.md.
    Reply order: continuation -> exact regex -> fuzzy(strong)
    -> scenario keywords -> ELIZA -> fuzzy(weak) -> pending-ack
    -> memory callback -> sentiment+pool */
 
-const VERSION = "v12.5";
+const VERSION = "v12.6";
 const mem = { name:null, turns:0, lastScen:null, moreIdx:0, pending:true,
-              topics:[], lastCb:0, history:[], awaitName:3 };
+              topics:[], lastCb:0, history:[], awaitName:3, lastRoute:null };
 
 function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
 function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
@@ -92,8 +84,7 @@ const SCEN = [
            `${mem.name}, of course. Logged in the sentry report the moment you told me.`])
    : (mem.awaitName = 2,
       pick(["Eish, that's the thing — you never told me! Come, out with it: what do they call you?",
-            "You know what, I've been too polite to admit I don't actually know. So tell me — what's your name?"])),
- a:["Eish, you never told me! What do they call you?"]},
+            "You know what, I've been too polite to admit I don't actually know. So tell me — what's your name?"]))},
 
 {id:"home", re:/where (do you|you) (live|stay|come from)|where are you from/i,
  protos:["where do you live","where are you from, where is your home",
@@ -731,11 +722,11 @@ const R_CHAT = R.chat;
 }
 
 /* ================= CLASSICAL FUZZY LAYER =================
-   v11: transformer embeddings are gone. Fuzzy intent matching is now
-   classical information retrieval — TF-IDF weighted cosine similarity
-   against the same prototype sentences, plus a small thesaurus, stopword
-   removal and light suffix stemming. No downloads, no network, instant
-   startup. Tune with __meer.probe("your test phrase") in the console. */
+   Fuzzy intent matching by classical information retrieval — TF-IDF
+   weighted cosine similarity against the prototype sentences, plus a
+   small thesaurus, stopword removal and light suffix stemming. No
+   downloads, no network, instant startup. Tune with
+   __meer.probe("your test phrase") in the console. */
 
 /* supplementary coverage data (js/data/protos.js), kept out of the logic
    file: extra prototype sentences and keywords per scenario */
@@ -856,9 +847,9 @@ function nearestVocab(w){
   OOVCACHE.set(w, best);
   return best;
 }
-function bestMatch(qv, vecs){
+function bestMatch(qv){
   let bi=-1, bs=-1;
-  for(let i=0;i<vecs.length;i++){ const s=cos(qv,vecs[i]); if(s>bs){bs=s;bi=i;} }
+  for(let i=0;i<VECS.length;i++){ const s=cos(qv,VECS[i]); if(s>bs){bs=s;bi=i;} }
   return bi<0 ? null : { sc: SCEN[PROTO[bi].si], score: bs };
 }
 /* query-side tokenization with typo correction */
@@ -867,10 +858,10 @@ function qtoks(s){
 }
 function bestCombined(text){
   const tk = qtoks(text);
-  return tk.length ? bestMatch(vecOf(tk), VECS) : null;
+  return tk.length ? bestMatch(vecOf(tk)) : null;
 }
 /* thresholds calibrated on the eval harness (eval/run.js, 100x100) */
-let TH = { strong:0.58, weak:0.42 };
+const TH = { strong:0.58, weak:0.42 };
 let lastUserMsg = "";
 function fuzzyHit(text){
   const raw = bestCombined(text);
@@ -892,6 +883,8 @@ function probe(text){
   console.table(scored.map(x=>({intent:x.id, score:x.s.toFixed(3), proto:x.proto})));
   return scored;
 }
+/* read by js/llm.js as the fallback status label when the clever brain
+   is enabled; unused while that layer stays dormant */
 const BRAIN_STATUS = "classical brain · "+SCEN.length+" scenarios · fully offline";
 
 /* keyword matching on stem-normalized tokens: kw "raining" matches
@@ -943,8 +936,8 @@ const RECIP_TAILS = [
 function useScen(sc){
   mem.lastScen = sc; mem.moreIdx = 0;
   mem.pending = !!sc.asks;
-  let r = sc.dyn ? fill(sc.dyn()) : pickA(sc);
-  if (sc.dyn) return r;
+  if (sc.dyn) return fill(sc.dyn());
+  let r = pickA(sc);
   if (!sc.asks && RECIP.has(sc.id) && !(sc.id==="name" && mem.name)
       && !/\?\s*$/.test(r) && Math.random()<0.4){
     r += " " + fill(bagPick("recip", RECIP_TAILS));
@@ -964,7 +957,7 @@ const BOTQ = new Set(["name","myname","home","family","age","gender","looks",
   "lonelybot","howru"]);
 
 /* ================= the pipeline ================= */
-async function pickReplyInner(raw){
+function pickReplyInner(raw){
   mem.turns++;
   const text = raw.trim();
   const t = " "+text.toLowerCase().replace(/[^a-z' ]/g," ")+" ";
@@ -985,7 +978,7 @@ async function pickReplyInner(raw){
     const sc = mem.lastScen;
     if (sc.more && mem.moreIdx < sc.more.length)
       { const r = fill(sc.more[mem.moreIdx++]); mem.lastRoute = "cont:more:"+sc.id; return r; }
-    if (/another|again|more/i.test(contText) && sc.a.length > 1)
+    if (/another|again|more/i.test(contText) && sc.a && sc.a.length > 1)
       { mem.lastRoute = "cont:again:"+sc.id; return pickA(sc); }
     mem.lastRoute = "cont:generic";
     return fill(bagPick("cont", CONT_GENERIC));
@@ -1034,7 +1027,7 @@ async function pickReplyInner(raw){
       mem.lastRoute = "namecapture";
       return r;
     }
-  } else if (mem.awaitName && mem.name) mem.awaitName = 0;
+  }
 
   // 2. name capture must run before generic ELIZA
   const nameM = text.match(ELIZA[0][0]);
@@ -1140,13 +1133,18 @@ async function pickReplyInner(raw){
   mem.lastRoute = "pool:chat";
   return reply;
 }
+/* async is the public contract (ui.js/llm.js/eval all await), even though
+   the classical pipeline itself is synchronous */
 async function pickReply(raw){
-  const r = await pickReplyInner(raw);
+  const r = pickReplyInner(raw);
   lastUserMsg = raw.trim();  /* becomes the context boost for the NEXT turn */
   /* dialogue state: any reply that ends on a question means Tsamma asked
      the user something — the next message is probably an answer, and should
      be acknowledged rather than fed to the generic pool */
   mem.pending = mem.pending || /\?\s*$/.test(r);
+  /* only the last entry's route is read today (the just-clarified check),
+     but the full {u,a,route} window is kept as conversation context for
+     the clever-brain layer */
   mem.history.push({ u: raw, a: r, route: mem.lastRoute });
   if (mem.history.length > 8) mem.history.shift();
   return r;

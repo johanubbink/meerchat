@@ -6,6 +6,16 @@ CLAUDE.md): the minor bumps on every change to the shipped site, and the
 `js/brain.js`. Eval scores are tracked separately in
 `eval/results/HISTORY.md`.
 
+## v12.6 — 2026-07-29
+
+- brain.js dead-code pass, behavior-identical (eval byte-identical):
+  unreachable awaitName branch and the never-emitted `myname` fallback
+  answer removed, `TH` is const, the inner pipeline is no longer
+  needlessly async (the public `pickReply` stays async), `bestMatch`
+  drops its always-the-same parameter, `mem.lastRoute` is declared in the
+  mem literal, and the stale v11 header prose is replaced with a current
+  description.
+
 ## v12.5 — 2026-07-29
 
 - brain.js internal cleanup, behavior-identical (eval byte-identical):
