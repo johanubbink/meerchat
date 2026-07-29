@@ -1,2 +1,26 @@
+# Claude Code
 .claude/
 CLAUDE.md
+
+# Node
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# Secrets / environment
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs & temp
+*.log
+tmp/
