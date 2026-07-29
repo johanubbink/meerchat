@@ -1,3 +1,6 @@
+/* ---------- status line ---------- */
+document.getElementById("brainstatus").textContent = BRAIN_STATUS;
+
 /* ---------- animation ---------- */
 const seq = [
   ["sentry","tsamma · on sentry duty",1100], ["blink","tsamma · on sentry duty",140],
