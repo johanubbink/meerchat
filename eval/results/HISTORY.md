@@ -15,6 +15,7 @@ responses per row, deterministic; frozen rubric in eval/lib/metrics.js).
 | 7 Judge-driven precision pass | 77.9 | 60.8% | 89.6% | 2.5% | 73.8 | 1.6% | 94.8% |
 | 8 Fresh-eyes review fixes (v12) | 76.7 | 57.5% | 89.9% | 2.1% | 72.2 | 1.8% | 89.5% |
 | 9 Final judge-flagged fixes | 77.8 | 60.2% | 87.8% | 2.4% | 74.9 | 2.4% | 96.4% |
+| 10 Themed pool lines as scenario variety (v12.4) | 77.8 | 59.3% | 87.5% | 2.2% | 76 | 2% | 94.7% |
 
 LLM-judge (5 transcripts x 3 judges, fixed rubric, scores /5):
 

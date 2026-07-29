@@ -15,7 +15,7 @@
    -> scenario keywords -> ELIZA -> fuzzy(weak) -> pending-ack
    -> memory callback -> sentiment+pool */
 
-const VERSION = "v12.3";
+const VERSION = "v12.4";
 const mem = { name:null, turns:0, lastScen:null, moreIdx:0, pending:true,
               topics:[], lastCb:0, history:[], awaitName:3 };
 
@@ -711,6 +711,18 @@ const CLARIFY_POS = [
 ];
 /* mid-conversation the generic pool must not greet or wave goodbye */
 const R_CHAT = R.chat;
+
+/* the themed pool categories double as extra answer variety for their
+   matching scenarios; exact duplicates are dropped so the shuffle bags
+   keep their no-repeat guarantee */
+{
+  const POOL_TO_SCEN = { greet:"greetscen", bye:"byescen", weather:"weather",
+                         food:"userfood", danger:"danger" };
+  for (const cat in POOL_TO_SCEN) {
+    const sc = SCEN.find(s => s.id === POOL_TO_SCEN[cat]);
+    if (sc) sc.a.push(...new Set(R[cat]));
+  }
+}
 
 /* ================= CLASSICAL FUZZY LAYER =================
    v11: transformer embeddings are gone. Fuzzy intent matching is now
