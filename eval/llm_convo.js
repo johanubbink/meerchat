@@ -16,7 +16,7 @@
 const fs = require("fs");
 const path = require("path");
 const loadBrain = require("./lib/loadBrain");
-const { PERSONA, memoryNote, groundingNote, sanitize } = require("./lib/llmShared");
+const { buildMessages, sanitize } = require("../js/llmShared");
 const PERSONAS = require("./lib/personas");
 
 const args = {};
@@ -48,19 +48,6 @@ async function chat(messages, opts = {}) {
       await new Promise((r) => setTimeout(r, 1000));
     }
   }
-}
-
-/* Tsamma reply: real brain state + llm.js prompt, exactly as production */
-function buildTsammaMessages(brain, hist, text, scripted, route) {
-  const sys = PERSONA + "\n\nCURRENT NOTES: " + memoryNote(brain.mem) + "\n" +
-    groundingNote(route, scripted);
-  const msgs = [{ role: "system", content: sys }];
-  for (const h of hist) {
-    msgs.push({ role: "user", content: h.u });
-    msgs.push({ role: "assistant", content: h.a });
-  }
-  msgs.push({ role: "user", content: text });
-  return msgs;
 }
 
 /* User simulator: persona system prompt + the running dialogue, roles
@@ -104,7 +91,7 @@ function buildUserMessages(persona, transcript) {
     const route = brain.mem.lastRoute;
 
     /* 3. clever brain generates the actual reply */
-    const tMsgs = buildTsammaMessages(brain, hist, userText, scripted, route);
+    const tMsgs = buildMessages(userText, scripted, route, brain.mem, hist);
     let tsammaText, usage;
     try {
       const r = await chat(tMsgs, { temp: 0.9, max: 120 });
