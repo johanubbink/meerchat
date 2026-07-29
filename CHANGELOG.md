@@ -6,6 +6,15 @@ CLAUDE.md): the minor bumps on every change to the shipped site, and the
 `js/brain.js`. Eval scores are tracked separately in
 `eval/results/HISTORY.md`.
 
+## v12.8 — 2026-07-29
+
+- ui.js cleanup: the idle caption is a single `IDLE` constant (was written
+  six times), the art's character grid is measured from the frames once
+  (the hardcoded 144 columns was wrong — the widest frame is 141) instead
+  of per resize, the reduced-motion path renders the still frame without
+  entering the animation loop, and the typing bubble keeps a direct
+  reference to its text node instead of relying on `lastChild` position.
+
 ## v12.7 — 2026-07-29
 
 - brain.js structural pass, behavior-identical (eval byte-identical): the
