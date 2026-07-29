@@ -14,7 +14,7 @@ js/data/frames.js   ASCII-art animation frames (F)
 js/data/responses.js  1000-line generic fallback pool (R), tagged by category
 js/data/protos.js   extra prototype sentences + keywords per scenario (data)
 js/brain.js         all chat logic, no DOM access (testable in Node)
-js/llm.js           clever brain: optional on-device LLM layer (v13)
+js/llm.js           clever brain: optional on-device LLM layer (v13, not loaded)
 js/ui.js            DOM wiring: animation loop, art scaling, chat bubbles
 ```
 
@@ -112,6 +112,12 @@ LLM-judge protocol scores sampled transcripts. See `eval/README.md` and
 `eval/results/HISTORY.md` for the metric progression. Run `node eval/run.js`.
 
 ## The clever brain (js/llm.js, v13 prototype)
+
+**Currently dormant: `index.html` does not load `js/llm.js`**, so visitors
+get the classical v12 brain and download nothing. The auto-download of
+multi-GB WebLLM weights on page load was too heavy to ship enabled. To
+re-enable, add `<script src="js/llm.js"></script>` between `brain.js` and
+`ui.js` in `index.html` (ui.js prefers `getReply()` when it exists).
 
 Progressive enhancement: an on-device LLM composes Tsamma's replies,
 grounded in the scripted brain. brain.js keeps running unchanged as router,
