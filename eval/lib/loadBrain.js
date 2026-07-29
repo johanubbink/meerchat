@@ -35,7 +35,7 @@ function compile() {
     fs.readFileSync(path.join(ROOT, "js/data/responses.js"), "utf8") +
     fs.readFileSync(path.join(ROOT, "js/data/protos.js"), "utf8") +
     fs.readFileSync(path.join(ROOT, "js/brain.js"), "utf8") +
-    ';__exports = { pickReply, mem, SCEN, PROTO, toks, fuzzyHit, TH, tune };';
+    ';__exports = { pickReply, mem, SCEN, PROTO, toks, fuzzyHit, TH, tune, bagPick, bags, R_CHAT, VERSION };';
   compiled = new vm.Script(src, { filename: "brain-under-test.js" });
   return compiled;
 }
