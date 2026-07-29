@@ -6,6 +6,17 @@ CLAUDE.md): the minor bumps on every change to the shipped site, and the
 `js/brain.js`. Eval scores are tracked separately in
 `eval/results/HISTORY.md`.
 
+## v12.7 — 2026-07-29
+
+- brain.js structural pass, behavior-identical (eval byte-identical): the
+  35-line name-capture window is its own `captureName()` function with
+  `NOTNAMES`/`inVocab` hoisted to module scope and the fuzzy-routing
+  check now computed lazily; the repeated statement-on-question-scenario
+  predicate is named (`botqStatement`); the prototype token arrays no
+  longer outlive the TF-IDF build; and the `__meer.probe()` dev tool uses
+  the same typo-bridged tokenizer as real routing, so its scores finally
+  match what the router sees.
+
 ## v12.6 — 2026-07-29
 
 - brain.js dead-code pass, behavior-identical (eval byte-identical):
