@@ -17,8 +17,6 @@ pre#art {
 }
 .caption { color: #8a6a3d; font-size: 12px; letter-spacing: 3px;
            margin-top: 6px; text-transform: uppercase; }
-.brainstatus { color: #5f4a2a; font-size: 10px; letter-spacing: 1px;
-               margin-top: 3px; }
 .chat {
   flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch;
   padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;
