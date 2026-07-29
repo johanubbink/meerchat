@@ -1,19 +1,33 @@
 * { box-sizing: border-box; }
+/* scene phase palettes: js/ui.js sets body[data-phase] from the clock.
+   Defaults double as the day phase and the no-JS look. */
+:root {
+  --sky-hi: #3a2a14; --sky-lo: #201409;
+  --ink: #e8b96b; --glow: rgba(232, 185, 107, 0.25);
+}
+body[data-phase="dawn"]   { --sky-hi: #46281c; --sky-lo: #241216;
+                            --ink: #eec990; --glow: rgba(238, 201, 144, 0.28); }
+body[data-phase="sunset"] { --sky-hi: #5c2610; --sky-lo: #200d07;
+                            --ink: #f0b070; --glow: rgba(240, 176, 112, 0.3); }
+body[data-phase="night"]  { --sky-hi: #151b2c; --sky-lo: #080a10;
+                            --ink: #b9c4d8; --glow: rgba(185, 196, 216, 0.25); }
 html, body {
   margin: 0; padding: 0; height: 100vh; height: 100dvh;
-  background: radial-gradient(ellipse at 50% 20%, #3a2a14 0%, #201409 70%);
+  background: radial-gradient(ellipse at 50% 20%, var(--sky-hi) 0%, var(--sky-lo) 70%);
   font-family: monospace, monospace;
-  color: #e8b96b;
+  color: var(--ink);
+  transition: color 2s;
   overflow: hidden;
 }
 body { display: flex; flex-direction: column; }
 .stage { flex: 0 0 auto; text-align: center; padding: 8px 0 2px;
          max-height: 46vh; max-height: 46dvh; overflow: hidden; }
 pre#art {
-  font-size: min(10px, 1.08vw); line-height: 1.02;
-  color: #e8b96b; margin: 0 auto; white-space: pre;
+  font-size: min(10px, 1.08vw); line-height: 1.02; /* 1.02 mirrored in ui.js fitArt() */
+  color: var(--ink); margin: 0 auto; white-space: pre;
   text-align: left; display: inline-block;
-  text-shadow: 0 0 10px rgba(232,185,107,0.25);
+  text-shadow: 0 0 10px var(--glow);
+  transition: color 2s, text-shadow 2s;
 }
 .caption { color: #8a6a3d; font-size: 12px; letter-spacing: 3px;
            margin-top: 6px; text-transform: uppercase; }

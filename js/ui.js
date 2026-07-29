@@ -1,35 +1,56 @@
-/* ---------- animation ---------- */
-const IDLE = "tsamma · on sentry duty";
-const seq = [
-  ["sentry",IDLE,1100], ["blink",IDLE,140],
-  ["sentry",IDLE,900],  ["look_left","checking left...",850],
-  ["sentry",IDLE,350],  ["look_right","checking right...",850],
-  ["sentry",IDLE,500],  ["flick","tail flick",300],
-  ["sentry",IDLE,700],  ["blink",IDLE,140],
-  ["sentry",IDLE,600],  ["duck","is that ou skelm?!",750],
-  ["sentry","all clear",1200],
-];
+/* ---------- scene & animation ---------- */
+const S = window.__scene;
+S.expandFrames(F, FD);
 const art = document.getElementById("art");
 const capEl = document.getElementById("cap");
 const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-let fi = 0;
-function tick() {
-  const [name, caption, hold] = seq[fi];
-  art.textContent = F[name]; capEl.textContent = caption;
-  fi = (fi + 1) % seq.length;
-  setTimeout(tick, hold);
-}
-if (still) { art.textContent = F.sentry; capEl.textContent = IDLE; }
-else tick();
 
-/* the frames' true character grid, measured once */
-const ROWS = F.sentry.split("\n").length;
-const COLS = Math.max(...Object.values(F).flatMap(f => f.split("\n").map(l => l.length)));
+/* compose the scene (sky, ground, trees, meerkat) for one pose and paint it */
+function draw(frame, caption) {
+  const out = S.renderFrame(new Date(), frame, F, SPR);
+  art.textContent = out.text;
+  document.body.dataset.phase = out.phase;
+  capEl.textContent = caption;
+}
+
+/* one loop, one timer: actions never spawn a second chain — runAction only
+   queues a request that the next schedStep consumes */
+let schedState = S.mkSched();
+function loop() {
+  const step = S.schedStep(schedState);
+  schedState = step.state;
+  draw(step.frame, step.caption);
+  setTimeout(loop, step.hold);
+}
+
+/* action seam: chat routes (and later, pointer input) trigger scene anims */
+function runAction(name) {
+  if (still) return;
+  schedState = S.schedRequest(schedState, name);
+}
+
+if (still) {
+  draw("sentry", S.IDLE_CAPTION);
+  /* no motion, but the sky still follows the clock (discrete updates) */
+  setInterval(() => draw("sentry", S.IDLE_CAPTION), 30000);
+} else loop();
+
+/* fit the scene grid to the viewport; glyph advance measured once (0.62 fallback) */
+function glyphRatio() {
+  const probe = document.createElement("span");
+  probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre;font-size:10px;";
+  probe.textContent = "#".repeat(100);
+  art.parentNode.appendChild(probe);
+  const r = probe.getBoundingClientRect().width / 1000;
+  probe.remove();
+  return r > 0.3 && r < 1 ? r : 0.62;
+}
+const ADV = glyphRatio();
 function fitArt() {
   const w = Math.min(document.body.clientWidth - 8, 760);
   const h = window.innerHeight * 0.40;
-  const fsW = w / (COLS * 0.62);
-  const fsH = h / (ROWS * 1.02);
+  const fsW = w / (S.GRID.cols * ADV);
+  const fsH = h / (S.GRID.rows * 1.02); /* 1.02 = line-height in css/style.css */
   art.style.fontSize = Math.max(3, Math.min(10, fsW, fsH)) + "px";
 }
 fitArt();

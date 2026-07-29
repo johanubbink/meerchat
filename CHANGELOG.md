@@ -6,6 +6,29 @@ CLAUDE.md): the minor bumps on every change to the shipped site, and the
 `js/brain.js`. Eval scores are tracked separately in
 `eval/results/HISTORY.md`.
 
+## v12.9 — 2026-07-29
+
+- Scene engine: the stage is now a composed scene (`js/scene.js`, pure and
+  Node-testable like brain.js) — z-ordered sprites blitted into one
+  141×88 character grid: stationary ground, day/night sky (sun arc,
+  moon + seeded stars from the real clock), and the meerkat as a
+  bottom-anchored sprite. CSS phase palettes (`body[data-phase]`) shift
+  the page ink/glow through dawn/day/sunset/night.
+- Fixes the floor jumping up two rows whenever the duck frame played:
+  the duck art was drawn with its baked ground line two rows higher than
+  every other pose; it now gets a per-frame baseline offset and the scene
+  draws its own dune line, pinned by a unit test across all poses.
+- The idle animation runs through a pure, interruptible scheduler
+  (`mkSched`/`schedStep`/`schedRequest`) instead of an uncancellable
+  `setTimeout` chain — `runAction()` is the seam chat routes (and later
+  pointer input) use to trigger animations like the dance.
+- New dev-only scene lab (`dev/scenelab.html`): renders any sprite, pose,
+  or animation step in isolation, with `?time=` clock override — never
+  loaded by index.html.
+- `fitArt()` measures the real glyph advance once (0.62 stays as the
+  fallback) and sizes the new grid; art color/glow moved to CSS custom
+  properties.
+
 ## v12.8 — 2026-07-29
 
 - ui.js cleanup: the idle caption is a single `IDLE` constant (was written
