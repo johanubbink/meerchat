@@ -6,6 +6,13 @@ CLAUDE.md): the minor bumps on every change to the shipped site, and the
 `js/brain.js`. Eval scores are tracked separately in
 `eval/results/HISTORY.md`.
 
+## v12.5 — 2026-07-29
+
+- brain.js internal cleanup, behavior-identical (eval byte-identical):
+  the previous-message context (`lastUserMsg`) is recorded once in the
+  `pickReply` wrapper instead of on each of 15 return paths, and a
+  `clarify(kind)` helper replaces six duplicated route-and-draw pairs.
+
 ## v12.4 — 2026-07-29
 
 - The themed fallback-pool categories (greet/bye/danger/weather/food),

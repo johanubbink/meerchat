@@ -15,7 +15,7 @@
    -> scenario keywords -> ELIZA -> fuzzy(weak) -> pending-ack
    -> memory callback -> sentiment+pool */
 
-const VERSION = "v12.4";
+const VERSION = "v12.5";
 const mem = { name:null, turns:0, lastScen:null, moreIdx:0, pending:true,
               topics:[], lastCb:0, history:[], awaitName:3 };
 
@@ -709,6 +709,12 @@ const CLARIFY_POS = [
   "Aweh, that's the spirit! Give me the whole story, {W} — the pups love good news at sunset chorus.",
   "Lekker man, lekker! And then? Don't skip the juicy parts, {W}.",
 ];
+/* route + draw for the simple clarify kinds (stmt keeps its {E} echo inline) */
+const CLARIFY = { q: CLARIFY_Q, huh: CLARIFY_HUH, neg: CLARIFY_NEG, pos: CLARIFY_POS };
+function clarify(kind){
+  mem.lastRoute = "clarify:" + kind;
+  return fill(bagPick("cl:" + kind, CLARIFY[kind]));
+}
 /* mid-conversation the generic pool must not greet or wave goodbye */
 const R_CHAT = R.chat;
 
@@ -970,7 +976,6 @@ async function pickReplyInner(raw){
   // 0a. a continuation word with no topic on the table is just social
   //     noise ("lol", "ok cool") — smile back and hand over the turn
   if (!mem.lastScen && CONT_RE.test(contText) && !mem.pending){
-    lastUserMsg = text;
     mem.lastRoute = "cont:noctx";
     return fill(bagPick("cont0", CONT_NOCTX));
   }
@@ -979,10 +984,9 @@ async function pickReplyInner(raw){
   if (mem.lastScen && CONT_RE.test(contText)){
     const sc = mem.lastScen;
     if (sc.more && mem.moreIdx < sc.more.length)
-      { const r = fill(sc.more[mem.moreIdx++]); lastUserMsg = text; mem.lastRoute = "cont:more:"+sc.id; return r; }
+      { const r = fill(sc.more[mem.moreIdx++]); mem.lastRoute = "cont:more:"+sc.id; return r; }
     if (/another|again|more/i.test(contText) && sc.a.length > 1)
-      { lastUserMsg = text; mem.lastRoute = "cont:again:"+sc.id; return pickA(sc); }
-    lastUserMsg = text;
+      { mem.lastRoute = "cont:again:"+sc.id; return pickA(sc); }
     mem.lastRoute = "cont:generic";
     return fill(bagPick("cont", CONT_GENERIC));
   }
@@ -990,7 +994,7 @@ async function pickReplyInner(raw){
   // 1. exact regexes (must run before name capture, so a first message
   //    like "version" or "help" hits its scenario instead of becoming a name)
   for (const sc of SCEN)
-    if (sc.re && sc.re.test(text)) { lastUserMsg = text; mem.lastRoute = "regex:"+sc.id; return useScen(sc); }
+    if (sc.re && sc.re.test(text)) { mem.lastRoute = "regex:"+sc.id; return useScen(sc); }
 
   // 1.5 she asked their name (opening line / "what do they call you?").
   //     Real users often greet or chat a bit before answering, so the
@@ -1024,7 +1028,6 @@ async function pickReplyInner(raw){
         && (hasPrefix || (!keywordHit(t) && !(fh && fh.score >= TH.strong)))){
       mem.name = capitalize(word);
       mem.awaitName = 0;
-      lastUserMsg = text;
       const r = pick([`${mem.name}! Lekker to meet you properly. Sentries never forget a face — or a name. So what's your ${tod()} looking like, ${mem.name}?`,
                       `Aweh, ${mem.name}! Welcome to the mound. Now we're proper chinas. What's news your side?`]);
       mem.pending = true;
@@ -1035,7 +1038,7 @@ async function pickReplyInner(raw){
 
   // 2. name capture must run before generic ELIZA
   const nameM = text.match(ELIZA[0][0]);
-  if (nameM) { lastUserMsg = text; mem.pending = false; mem.awaitName = 0; mem.lastRoute = "eliza:name"; return ELIZA[0][1](nameM); }
+  if (nameM) { mem.pending = false; mem.awaitName = 0; mem.lastRoute = "eliza:name"; return ELIZA[0][1](nameM); }
 
   /* dialogue state: she just asked a question and this is not a question
      back — the message is most likely an ANSWER. Answers still route to a
@@ -1056,11 +1059,8 @@ async function pickReplyInner(raw){
   /* arithmetic is beyond a meerkat: two numbers, or a number with an
      operator word, deflect as an out-of-domain question */
   const nums = (text.match(/\d+([.,]\d+)?/g) || []).length;
-  if (nums >= 2 || (nums >= 1 && /\b(times|plus|minus|divided|multiplied|squared|percent|factorial|root)\b|[+*\/=^]|\d\s*x\s*\d/i.test(text))){
-    lastUserMsg = text;
-    mem.lastRoute = "clarify:q";
-    return fill(bagPick("cl:q", CLARIFY_Q));
-  }
+  if (nums >= 2 || (nums >= 1 && /\b(times|plus|minus|divided|multiplied|squared|percent|factorial|root)\b|[+*\/=^]|\d\s*x\s*\d/i.test(text)))
+    return clarify("q");
 
   /* questions and requests are never "answers" to her question */
   const answering = mem.pending && !/\?/.test(text) && !isRequest;
@@ -1075,18 +1075,18 @@ async function pickReplyInner(raw){
   const strongBar = TH.strong + (shortAnswer ? 0.1 : 0) + (isQ && oov ? 0.1 : 0)
     + (hit && isStatement && BOTQ.has(hit.sc.id) ? 0.12 : 0)
     + (moodReport ? 0.1 : 0);
-  if (hit && hit.score >= strongBar) { lastUserMsg = text; mem.lastRoute = "fuzzy-strong:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
+  if (hit && hit.score >= strongBar) { mem.lastRoute = "fuzzy-strong:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
 
   // 4. scenario keywords (before ELIZA so 'can you give me advice' finds advice)
   const kh = keywordHit(t, shortAnswer ? 2 : 1);
-  if (kh) { lastUserMsg = text; mem.lastRoute = "keyword:"+kh.id; return useScen(kh); }
+  if (kh) { mem.lastRoute = "keyword:"+kh.id; return useScen(kh); }
 
   // 5. ELIZA reflections, then weak fuzzy
   for (let i = 1; i < ELIZA.length; i++){
     const m = text.match(ELIZA[i][0]);
-    if (m) { lastUserMsg = text; mem.pending = false; mem.lastRoute = "eliza:"+i; return ELIZA[i][1](m); }
+    if (m) { mem.pending = false; mem.lastRoute = "eliza:"+i; return ELIZA[i][1](m); }
   }
-  if (!shortAnswer && !(isQ && oov) && !moodReport && !(hit && isStatement && BOTQ.has(hit.sc.id)) && hit && hit.score >= TH.weak) { lastUserMsg = text; mem.lastRoute = "fuzzy-weak:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
+  if (!shortAnswer && !(isQ && oov) && !moodReport && !(hit && isStatement && BOTQ.has(hit.sc.id)) && hit && hit.score >= TH.weak) { mem.lastRoute = "fuzzy-weak:"+hit.sc.id+":"+hit.score.toFixed(3); return useScen(hit.sc); }
 
   // 6. she asked you something last turn: acknowledge the answer —
   //    but a question back is not an answer, and keyboard mash gets the
@@ -1094,7 +1094,6 @@ async function pickReplyInner(raw){
   if (mem.pending && !isQ && (qtk.some(w => DF[w] !== undefined)
       || /\b(fine|okay|ok|alright|good|great|lekker|sharp|nothing|nope|meh|same|dandy)\b/i.test(text))){
     mem.pending = false;
-    lastUserMsg = text;
     mem.lastRoute = "ack";
     const e = echo(text);
     return fill(bagPick("acks", ACKS)) + (e ? `"${capitalize(e)}" — ja. ` : "") + fill(bagPick("acktails", ACK_TAILS));
@@ -1104,7 +1103,6 @@ async function pickReplyInner(raw){
   if (mem.topics.length && mem.turns - mem.lastCb > 4 && Math.random() < 0.45){
     mem.lastCb = mem.turns;
     const tp = mem.topics.shift();
-    lastUserMsg = text;
     mem.lastRoute = "callback";
     return fill(bagPick("cb", CALLBACKS)).replace("{T}", tp);
   }
@@ -1115,9 +1113,8 @@ async function pickReplyInner(raw){
   //    statements get an echo + clarifying question. The random pool only
   //    fires as a variety valve right after a clarify, and then only with
   //    neutral "chat" lines — no greeting or goodbye junk mid-conversation.
-  lastUserMsg = text;
-  if (senti < 0){ mem.lastRoute = "clarify:neg"; return fill(bagPick("cl:neg", CLARIFY_NEG)); }
-  if (senti > 0){ mem.lastRoute = "clarify:pos"; return fill(bagPick("cl:pos", CLARIFY_POS)); }
+  if (senti < 0) return clarify("neg");
+  if (senti > 0) return clarify("pos");
   const prev = mem.history.length ? mem.history[mem.history.length-1].route : null;
   const justClarified = prev && prev.startsWith("clarify");
   if (!justClarified){
@@ -1126,15 +1123,9 @@ async function pickReplyInner(raw){
     /* a well-formed question about the wider world deserves the honest
        "beyond my dune" rather than the "say that again" reserved for
        actual gibberish */
-    if (isQ && text.trim().split(/\s+/).length >= 3){
-      mem.lastRoute = "clarify:q"; return fill(bagPick("cl:q", CLARIFY_Q));
-    }
-    if (!tkn.length || known / tkn.length < 0.34){
-      mem.lastRoute = "clarify:huh"; return fill(bagPick("cl:huh", CLARIFY_HUH));
-    }
-    if (isQ){
-      mem.lastRoute = "clarify:q"; return fill(bagPick("cl:q", CLARIFY_Q));
-    }
+    if (isQ && text.trim().split(/\s+/).length >= 3) return clarify("q");
+    if (!tkn.length || known / tkn.length < 0.34) return clarify("huh");
+    if (isQ) return clarify("q");
     const e = echo(text);
     if (e){
       remember(e);
@@ -1151,6 +1142,7 @@ async function pickReplyInner(raw){
 }
 async function pickReply(raw){
   const r = await pickReplyInner(raw);
+  lastUserMsg = raw.trim();  /* becomes the context boost for the NEXT turn */
   /* dialogue state: any reply that ends on a question means Tsamma asked
      the user something — the next message is probably an answer, and should
      be acknowledged rather than fed to the generic pool */
