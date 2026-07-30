@@ -6,8 +6,8 @@ const capEl = document.getElementById("cap");
 const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* compose the scene (sky, ground, trees, meerkat) for one pose and paint it */
-function draw(frame, caption) {
-  const out = S.renderFrame(new Date(), frame, F, SPR);
+function draw(frame, caption, off) {
+  const out = S.renderFrame(new Date(), frame, F, SPR, off);
   art.textContent = out.text;
   document.body.dataset.phase = out.phase;
   capEl.textContent = caption;
@@ -19,7 +19,7 @@ let schedState = S.mkSched();
 function loop() {
   const step = S.schedStep(schedState);
   schedState = step.state;
-  draw(step.frame, step.caption);
+  draw(step.frame, step.caption, step.off);
   setTimeout(loop, step.hold);
 }
 
@@ -75,6 +75,12 @@ function bubble(text, whoCls) {
   chat.scrollTop = chat.scrollHeight;
   return body;
 }
+/* route pattern -> scene action. Pointer input will call runAction() with
+   the same names once that layer lands. */
+const ROUTE_ACTIONS = [
+  [/^(regex|keyword|fuzzy-(strong|weak)):dance\b/, "dance"],
+  [/^cont:again:dance\b/, "dance"],
+];
 let busy = false;
 function go() {
   const text = inp.value.trim();
@@ -91,6 +97,10 @@ function go() {
     catch (e) { console.warn(e); reply = "Eish, the wind took my words there. Say again, " + who() + "?"; }
     typing.textContent = reply;
     chat.scrollTop = chat.scrollHeight;
+    /* the route the brain took decides whether the scene does something —
+       the brain itself stays presentation-agnostic */
+    const act = ROUTE_ACTIONS.find(([re]) => re.test(mem.lastRoute || ""));
+    if (act) runAction(act[1]);
     busy = false;
   }, delay);
 }

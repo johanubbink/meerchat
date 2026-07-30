@@ -9,8 +9,11 @@ const assert = require("node:assert/strict");
 const { read } = require("./helpers");
 
 const scene = require("../js/scene.js");
-const { SPR } = require("../js/data/sprites.js");
-const F = new Function(read("js/data/frames.js") + ";return F;")();
+const { SPR, FD } = require("../js/data/sprites.js");
+const F = scene.expandFrames(
+  new Function(read("js/data/frames.js") + ";return F;")(),
+  FD
+);
 
 const NOON = new Date(2026, 0, 14, 12, 0, 0);
 const { GRID } = scene;
@@ -84,6 +87,16 @@ test("renderFrame: grid dimensions and phase come out right", () => {
   for (const r of rows) assert.ok(r.length <= GRID.cols);
 });
 
+test("katPose: the baked dune is stripped, the feet marks on those rows stay", () => {
+  const raw = F.sentry.split("\n");
+  const posed = scene.katPose(F, "sentry").split("\n");
+  assert.match(raw[71], /\./, "the raw frame has baked ground dots");
+  assert.doesNotMatch(posed[71], /\./, "the posed sprite has none");
+  assert.match(posed[71], /-{5,}/, "but keeps the feet/shadow marks");
+  /* everything above the ground rows is untouched */
+  for (let r = 0; r < 69; r++) assert.equal(posed[r], raw[r], `row ${r}`);
+});
+
 test("ground stays put: every pose keeps the dune line at the same rows", () => {
   /* the floor-jump bug: duck's baked ground sat 2 rows higher than every
      other frame's. The scene must pin it to GRID.groundY for all poses. */
@@ -134,6 +147,73 @@ test("scheduler: idle loops, an action interrupts once and falls back to idle", 
     st = step.state;
   }
   assert.deepEqual(st, { mode: "idle", i: 0, queued: null });
+});
+
+test("spliceRows: a band splice takes those rows from the donor, rest from the base", () => {
+  const out = scene.spliceRows(F, "sentry", [{ from: "look_left", rows: [0, 16] }]).split("\n");
+  const sentry = F.sentry.split("\n"), left = F.look_left.split("\n");
+  for (let r = 0; r <= 16; r++) assert.equal(out[r], left[r], `row ${r} from donor`);
+  for (let r = 17; r < sentry.length; r++) assert.equal(out[r], sentry[r], `row ${r} from base`);
+});
+
+test("dance poses exist, are full-height, and never splice the ground rows", () => {
+  for (const name of ["dance_l", "dance_r", "dance_spin"]) {
+    assert.ok(F[name], `${name} expanded into F`);
+    const rows = F[name].split("\n");
+    assert.equal(rows.length, F.sentry.split("\n").length);
+    /* rows 71-72 carry the baked feet/ground marks — they must stay the
+       base pose's, so the dune line never shifts */
+    const sentry = F.sentry.split("\n");
+    assert.equal(rows[71], sentry[71], `${name} row 71`);
+    assert.equal(rows[72], sentry[72], `${name} row 72`);
+  }
+  /* the splice really produced something new */
+  assert.notEqual(F.dance_l, F.sentry);
+  assert.notEqual(F.dance_l, F.look_left);
+});
+
+test("sway offsets move the meerkat but not the scenery or the dune line", () => {
+  const plain = scene.renderFrame(NOON, "sentry", F, SPR).text.split("\n");
+  const swayed = scene.renderFrame(NOON, "sentry", F, SPR, { dx: -3, dy: 0 }).text.split("\n");
+  assert.notDeepEqual(swayed, plain, "the meerkat moved");
+  /* the tree bands (well clear of the meerkat) are untouched */
+  const treeCols = (row) => row.slice(0, 30);
+  for (let r = 60; r < 80; r++) {
+    assert.equal(treeCols(swayed[r]), treeCols(plain[r]), `tree columns at row ${r}`);
+  }
+  /* and the ground stays exactly where it is, for every dance step */
+  const dots = (row) => (row.match(/\./g) || []).length;
+  for (const [frame, , , dx, dy] of scene.ANIMS.dance) {
+    const rows = scene.renderFrame(NOON, frame, F, SPR, { dx: dx || 0, dy: dy || 0 })
+      .text.split("\n");
+    const groundRows = rows.flatMap((r, i) => (dots(r) >= 30 ? [i] : []));
+    assert.deepEqual(
+      groundRows,
+      [GRID.groundY, GRID.groundY + 1],
+      `dance step ${frame} dx${dx} dy${dy} moved the ground`
+    );
+  }
+});
+
+test("scheduler: every step carries an offset, and the dance actually sways", () => {
+  let st = scene.schedRequest(scene.mkSched(), "dance");
+  const offsets = [];
+  for (let i = 0; i < scene.ANIMS.dance.length; i++) {
+    const step = scene.schedStep(st);
+    st = step.state;
+    assert.equal(typeof step.off.dx, "number");
+    assert.equal(typeof step.off.dy, "number");
+    offsets.push(step.off.dx);
+  }
+  assert.ok(offsets.some((d) => d < 0), "sways left");
+  assert.ok(offsets.some((d) => d > 0), "sways right");
+  /* idle never shifts her off the mound */
+  let ist = scene.mkSched();
+  for (let i = 0; i < scene.ANIMS.idle.length; i++) {
+    const step = scene.schedStep(ist);
+    ist = step.state;
+    assert.deepEqual(step.off, { dx: 0, dy: 0 }, "idle stays centred");
+  }
 });
 
 test("scheduler: duplicate and unknown requests are dropped", () => {

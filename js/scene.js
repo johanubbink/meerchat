@@ -22,8 +22,33 @@
 
 const GRID = { cols: 141, rows: 88, skyRows: 15, katY: 15, groundY: 86 };
 
-/* per-frame baseline offset (rows down from GRID.katY) */
+/* per-frame baseline offset (rows down from GRID.katY): the duck frame was
+   redrawn with its ground line two rows higher than every other pose */
 const KAT_DY = { duck: 2 };
+
+/* Which rows of each frame carry the artist's baked-in dune line. Those
+   dots are stripped so the scene's ground layer is the only floor — the
+   feet and shadow marks on the same rows are kept, since they belong to
+   the meerkat and should travel with her. Without this, lifting her for a
+   hop drags a ghost horizon up the screen with her. */
+const KAT_GROUND_ROWS = { duck: [69, 70] };
+const KAT_GROUND_DEFAULT = [71, 72];
+
+/* memoized per frame, keyed on the source art so re-expanded frames don't
+   serve a stale pose */
+const poseCache = new Map();
+function katPose(F, name) {
+  const src = F[name];
+  const hit = poseCache.get(name);
+  if (hit && hit.src === src) return hit.art;
+  const rows = src.split("\n");
+  for (const r of KAT_GROUND_ROWS[name] || KAT_GROUND_DEFAULT) {
+    if (rows[r] !== undefined) rows[r] = rows[r].replace(/\./g, " ");
+  }
+  const art = rows.join("\n");
+  poseCache.set(name, { src, art });
+  return art;
+}
 
 /* the stationary dune line: two full-width dot rows, indented like the
    frames' own baked ground (dots start at col 4) */
@@ -123,8 +148,10 @@ function skyState(date) {
 
 /* ---------- scene assembly ---------- */
 
-/* F: the meerkat frames object; SPR: {sun, moon, trees:[{art,x,sink}]} */
-function buildScene(date, frameName, F, SPR) {
+/* F: the meerkat frames object; SPR: {sun, moon, trees:[{art,x,sink}]}.
+   off {dx,dy} shifts only the meerkat — the scenery and the dune line stay
+   put, which is what makes a sway read as the meerkat moving. */
+function buildScene(date, frameName, F, SPR, off) {
   const sky = skyState(date);
   const sprites = [{ art: GROUND_ART, x: 0, y: GRID.groundY, z: 0 }];
   if (sky.stars) for (const s of sky.stars) sprites.push({ art: [s.ch], x: s.x, y: s.y, z: 1 });
@@ -134,24 +161,41 @@ function buildScene(date, frameName, F, SPR) {
     sprites.push({ art: t.art, x: t.x, y: GRID.groundY - t.art.length + (t.sink || 1), z: 5 });
   }
   sprites.push({
-    art: F[frameName],
-    x: 0,
-    y: GRID.katY + (KAT_DY[frameName] || 0),
+    art: katPose(F, frameName),
+    x: (off && off.dx) || 0,
+    y: GRID.katY + (KAT_DY[frameName] || 0) + ((off && off.dy) || 0),
     z: 10,
   });
   return { sprites, phase: sky.phase };
 }
 
 /* the one call the UI makes per tick */
-function renderFrame(date, frameName, F, SPR) {
-  const s = buildScene(date, frameName, F, SPR);
+function renderFrame(date, frameName, F, SPR, off) {
+  const s = buildScene(date, frameName, F, SPR, off);
   return { text: compose(s.sprites), phase: s.phase };
 }
 
-/* merge delta-encoded poses ({base, rows:{idx: line}}) into F */
+/* Compose a new pose from horizontal bands of existing poses. The frames
+   are image-derived: every torso row is one continuous ink run (the paws
+   are shaded into the chest), so limbs can't be split off by column — but
+   the poses DO differ in clean row bands (head 0-16, tail 54-70), which
+   makes band splicing the granularity this art actually supports.
+   parts: [{ from: frameName, rows: [start, end] }] — inclusive rows. */
+function spliceRows(F, base, parts) {
+  const rows = F[base].split("\n");
+  for (const p of parts) {
+    const src = F[p.from].split("\n");
+    for (let r = p.rows[0]; r <= p.rows[1]; r++) rows[r] = src[r];
+  }
+  return rows.join("\n");
+}
+
+/* merge delta-encoded poses into F. A pose is either row deltas
+   ({base, rows:{idx: line}}) or a band splice ({base, parts:[...]}). */
 function expandFrames(F, FD) {
   for (const name of Object.keys(FD)) {
     const d = FD[name];
+    if (d.parts) { F[name] = spliceRows(F, d.base, d.parts); continue; }
     const rows = F[d.base].split("\n");
     for (const r of Object.keys(d.rows)) rows[+r] = d.rows[r];
     F[name] = rows.join("\n");
@@ -161,7 +205,10 @@ function expandFrames(F, FD) {
 
 /* ---------- animation scheduler (pure state machine) ---------- */
 
+/* animation steps are [frame, caption, holdMs, dx, dy] — dx/dy shift the
+   meerkat only, so a sway or a hop moves her against a fixed dune */
 const IDLE_CAPTION = "tsamma · on sentry duty";
+const SHUFFLE = "the sentry shuffle!";
 const ANIMS = {
   idle: [
     ["sentry", IDLE_CAPTION, 1100], ["blink", IDLE_CAPTION, 140],
@@ -172,14 +219,18 @@ const ANIMS = {
     ["sentry", IDLE_CAPTION, 600],  ["duck", "is that ou skelm?!", 750],
     ["sentry", "all clear", 1200],
   ],
-  /* placeholder shuffle from existing poses; real dance frames land with
-     the dance milestone and replace these entries */
+  /* Sway left, sway right, twice, then a hop and a spin flourish. At this
+     glyph scale the horizontal lean reads as motion far better than any
+     limb edit could, and it costs no new art. */
   dance: [
-    ["look_left", "the sentry shuffle!", 280], ["look_right", "the sentry shuffle!", 280],
-    ["look_left", "the sentry shuffle!", 280], ["look_right", "the sentry shuffle!", 280],
-    ["flick", "the sentry shuffle!", 300],
-    ["look_left", "the sentry shuffle!", 280], ["look_right", "the sentry shuffle!", 280],
-    ["sentry", "and... back on duty", 900],
+    ["dance_l", SHUFFLE, 260, -3, 0], ["sentry", SHUFFLE, 200, 0, 0],
+    ["dance_r", SHUFFLE, 260, 3, 0],  ["sentry", SHUFFLE, 200, 0, 0],
+    ["dance_l", SHUFFLE, 240, -3, 0], ["sentry", SHUFFLE, 180, 0, 0],
+    ["dance_r", SHUFFLE, 240, 3, 0],  ["sentry", SHUFFLE, 180, 0, 0],
+    ["dance_spin", "...and a hop!", 220, -2, -3],
+    ["dance_spin", "...and a hop!", 220, 2, -3],
+    ["flick", SHUFFLE, 260, 0, 0],
+    ["sentry", "and... back on duty", 1100, 0, 0],
   ],
 };
 
@@ -198,17 +249,22 @@ function schedStep(state) {
   let mode = state.mode, i = state.i;
   if (state.queued && state.queued !== mode) { mode = state.queued; i = 0; }
   const seq = ANIMS[mode];
-  const [frame, caption, hold] = seq[i];
+  const [frame, caption, hold, dx, dy] = seq[i];
   let nextMode = mode, nextI = i + 1;
   if (nextI >= seq.length) { nextI = 0; nextMode = "idle"; }
-  return { frame, caption, hold, state: { mode: nextMode, i: nextI, queued: null } };
+  return {
+    frame, caption, hold,
+    off: { dx: dx || 0, dy: dy || 0 },
+    state: { mode: nextMode, i: nextI, queued: null },
+  };
 }
 
 /* ---------- export guard (browser global / Node module) ---------- */
 
 const __sceneAPI = {
-  GRID, KAT_DY, GROUND_ART, makeGrid, blit, compose, skyState, skyArc,
-  buildScene, renderFrame, expandFrames, IDLE_CAPTION, ANIMS,
+  GRID, KAT_DY, KAT_GROUND_ROWS, GROUND_ART, katPose,
+  makeGrid, blit, compose, skyState, skyArc,
+  buildScene, renderFrame, spliceRows, expandFrames, IDLE_CAPTION, ANIMS,
   mkSched, schedRequest, schedStep,
 };
 if (typeof window !== "undefined") window.__scene = __sceneAPI;

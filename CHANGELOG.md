@@ -6,6 +6,28 @@ CLAUDE.md): the minor bumps on every change to the shipped site, and the
 `js/brain.js`. Eval scores are tracked separately in
 `eval/results/HISTORY.md`.
 
+## v12.11 — 2026-07-30
+
+- Ask Tsamma to dance and she does: "dance for me", "gooi a dansie" and
+  friends route to a new `dance` scenario, and `js/ui.js` reads the route
+  the brain took to trigger the matching scene animation. The brain stays
+  presentation-agnostic — the route→action table lives in the UI, and is
+  the same seam a future click/tap layer will use.
+- The dance is built from band splices of the existing poses (head rows
+  from look-left/right/blink, tail rows from the flick) plus per-beat sway
+  and hop offsets that move the meerkat against a fixed dune. The frames
+  are image-derived — every torso row is one continuous ink run with the
+  paws shaded into the chest — so bands, not limbs, are the granularity
+  this art supports.
+- Fixes a ghost horizon the hop exposed: each frame has the dune line
+  baked into its bottom rows, so lifting the meerkat dragged a second
+  floor up the screen with her. Those dots are now stripped per pose
+  (`katPose`) and the scene's ground layer is the only floor; the feet and
+  shadow marks on the same rows stay with her.
+- New `test/ui-wiring.test.js` runs `js/ui.js` for the first time, against
+  a DOM stub and a controllable clock: boot, the idle lap, chat → route →
+  dance, and the reduced-motion path. Eval unchanged at 77.8 overall.
+
 ## v12.10 — 2026-07-30
 
 - Scenery: two camelthorn acacias on the dune, drawn as flat-crowned

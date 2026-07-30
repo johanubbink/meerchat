@@ -52,9 +52,14 @@ if (spriteName) {
   /* deterministic: the Nth step of an animation, no timers */
   const seq = S.ANIMS[anim];
   const step = parseInt(q.get("step") || "0", 10) % seq.length;
-  const [frame, caption] = seq[step];
-  const out = S.renderFrame(labDate(), frame, F, SPR);
-  show(out.text, `${anim}[${step}] = ${frame} · "${caption}" · ${out.phase}`, out.phase);
+  const [frame, caption, , dx, dy] = seq[step];
+  const off = { dx: dx || 0, dy: dy || 0 };
+  const out = S.renderFrame(labDate(), frame, F, SPR, off);
+  show(
+    out.text,
+    `${anim}[${step}] = ${frame} · "${caption}" · dx${off.dx} dy${off.dy} · ${out.phase}`,
+    out.phase
+  );
 } else if (anim) {
   /* live loop through the scheduler, like ui.js will drive it */
   let st = S.mkSched();
@@ -62,7 +67,7 @@ if (spriteName) {
   (function loop() {
     const step = S.schedStep(st);
     st = step.state;
-    const out = S.renderFrame(labDate(), step.frame, F, SPR);
+    const out = S.renderFrame(labDate(), step.frame, F, SPR, step.off);
     show(out.text, `${step.frame} · "${step.caption}" · ${out.phase}`, out.phase);
     setTimeout(loop, step.hold);
   })();
