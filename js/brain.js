@@ -7,7 +7,7 @@
    -> scenario keywords -> ELIZA -> fuzzy(weak) -> pending-ack
    -> memory callback -> sentiment+pool */
 
-const VERSION = "v12.8";
+const VERSION = "v12.12";
 const mem = { name:null, turns:0, lastScen:null, moreIdx:0, pending:true,
               topics:[], lastCb:0, history:[], awaitName:3, lastRoute:null };
 
@@ -245,6 +245,13 @@ const SCEN = [
  kw:["sing me","sing a song","sing something"],
  a:["Ahem. 🎵 Peep-peep, chirr-chirr, WAAK-WAAK, peep. 🎵 That's the sunset chorus, verse one. It sounds better with twenty-three of us and an actual sunset.",
     "My singing has been described as 'an effective predator deterrent', {W}. But fine: 🎵 the dunes are red, the sky is wide, no eagle takes what I decide 🎵 — original composition. Vlokkie wept."]},
+
+{id:"dance", re:/^\s*(please\s+)?((can|could|will|would)\s+you\s+|do\s+a\s+|show\s+(me|us)\s+(a|your)\s+|gooi\s+(a|'n)\s+)?dan(ce|s(ie)?)(\s+for\s+(me|us))?(\s+a\s+(bit|little))?\s*[!.?]*$/i,
+ protos:["can you dance","dance for me","show me a dance","do a little dance"],
+ kw:["dance","dansie","dance for me"],
+ a:["Watch the paws, {W} — this is the sentry shuffle. Left, right, tail, hop. Mama Nossob says it looks like I'm standing on a hot rock, but she has no rhythm.",
+    "Aweh, one vastrap coming up! *sways left, sways right, small hop* Vlokkie taught me that last bit, then fell down a hole doing it.",
+    "For you, {W}? Always. 🎵 *shuffles left, shuffles right, tail flick, hop* 🎵 Twenty-three meerkats do this at sunset and it's glorious."]},
 
 {id:"game", protos:["let's play a game","do you want to play something with me"],
  kw:["play a game","let's play"],

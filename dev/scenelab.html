@@ -1,0 +1,43 @@
+<!doctype html>
+<!-- Scene lab: dev-only harness for the scene engine. NEVER loaded by
+     index.html (static-guards pins index.html's script list). Open from
+     file:// with query params:
+       ?frame=sentry|duck|...        one meerkat pose in the full scene
+       ?sprite=sun|moon|tree1|...    a single sprite alone, on a ruler grid
+       ?anim=idle|dance&step=N       the Nth step of an animation, frozen
+       ?play=1                       run the scheduler live (with ?anim)
+       ?time=22:00                   override the clock for the sky
+       ?grid=1                       row/col ruler overlay
+       ?bare=1                       art only, no info line
+     Examples:
+       scenelab.html?frame=duck&time=12:00
+       scenelab.html?anim=dance&step=3&time=18:30
+       scenelab.html?sprite=tree1&grid=1                                 -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>meerchat scene lab</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #201409; color: #e8b96b; }
+  body { display: flex; flex-direction: column; align-items: center;
+         font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+  pre#art { margin: 8px auto 0; line-height: 1.02; letter-spacing: 0;
+            font-size: 8px; text-shadow: 0 0 6px rgba(232, 185, 107, .35); }
+  #info { font-size: 12px; color: #8a6a3d; padding: 6px; }
+  body.phase-dawn   { background: #2a1a1a; }
+  body.phase-sunset { background: #38180a; }
+  body.phase-night  { background: #0d1016; color: #b9c4d8;
+                      --glow: rgba(185, 196, 216, .3); }
+  body.phase-night pre#art { text-shadow: 0 0 6px rgba(185, 196, 216, .3); }
+</style>
+</head>
+<body>
+<pre id="art"></pre>
+<div id="info"></div>
+<script src="../js/data/frames.js"></script>
+<script src="../js/data/sprites.js"></script>
+<script src="../js/scene.js"></script>
+<script src="scenelab.js"></script>
+</body>
+</html>

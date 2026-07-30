@@ -6,6 +6,73 @@ CLAUDE.md): the minor bumps on every change to the shipped site, and the
 `js/brain.js`. Eval scores are tracked separately in
 `eval/results/HISTORY.md`.
 
+## v12.12 — 2026-07-30
+
+- The stage gets a bit more height (46% → 52% of the viewport): the sky band
+  grew the grid from 73 to 88 rows, which had shrunk the meerkat; she is now
+  about the size she was before the scene landed. Checked at 980px and 390px.
+- Documented the scene engine in `docs/ARCHITECTURE.md` (compositor contract,
+  the stationary-floor corrections, sky clock, band splicing, scheduler, the
+  route→action seam) and added `dev/README.md` with the headless-Chrome
+  verification recipes and the sprite-drawing notes.
+
+## v12.11 — 2026-07-30
+
+- Ask Tsamma to dance and she does: "dance for me", "gooi a dansie" and
+  friends route to a new `dance` scenario, and `js/ui.js` reads the route
+  the brain took to trigger the matching scene animation. The brain stays
+  presentation-agnostic — the route→action table lives in the UI, and is
+  the same seam a future click/tap layer will use.
+- The dance is built from band splices of the existing poses (head rows
+  from look-left/right/blink, tail rows from the flick) plus per-beat sway
+  and hop offsets that move the meerkat against a fixed dune. The frames
+  are image-derived — every torso row is one continuous ink run with the
+  paws shaded into the chest — so bands, not limbs, are the granularity
+  this art supports.
+- Fixes a ghost horizon the hop exposed: each frame has the dune line
+  baked into its bottom rows, so lifting the meerkat dragged a second
+  floor up the screen with her. Those dots are now stripped per pose
+  (`katPose`) and the scene's ground layer is the only floor; the feet and
+  shadow marks on the same rows stay with her.
+- New `test/ui-wiring.test.js` runs `js/ui.js` for the first time, against
+  a DOM stub and a controllable clock: boot, the idle lap, chat → route →
+  dance, and the reduced-motion path. Eval unchanged at 77.8 overall.
+
+## v12.10 — 2026-07-30
+
+- Scenery: two camelthorn acacias on the dune, drawn as flat-crowned
+  silhouettes with visible limbs converging on the trunk (an earlier pass
+  read as wine glasses — a wide crown over a hairline stem needs branches
+  to read as a tree). They use lighter glyphs than the meerkat's dense
+  fills so they sit back as distant background.
+- Sun and moon redrawn: the sun is a rayed disc, the moon a crescent with
+  pointed horns, both legible at the ~4–8 px scene font size.
+- Scene lab gained `?fs=` to render a sprite at a large font for detail
+  review.
+
+## v12.9 — 2026-07-29
+
+- Scene engine: the stage is now a composed scene (`js/scene.js`, pure and
+  Node-testable like brain.js) — z-ordered sprites blitted into one
+  141×88 character grid: stationary ground, day/night sky (sun arc,
+  moon + seeded stars from the real clock), and the meerkat as a
+  bottom-anchored sprite. CSS phase palettes (`body[data-phase]`) shift
+  the page ink/glow through dawn/day/sunset/night.
+- Fixes the floor jumping up two rows whenever the duck frame played:
+  the duck art was drawn with its baked ground line two rows higher than
+  every other pose; it now gets a per-frame baseline offset and the scene
+  draws its own dune line, pinned by a unit test across all poses.
+- The idle animation runs through a pure, interruptible scheduler
+  (`mkSched`/`schedStep`/`schedRequest`) instead of an uncancellable
+  `setTimeout` chain — `runAction()` is the seam chat routes (and later
+  pointer input) use to trigger animations like the dance.
+- New dev-only scene lab (`dev/scenelab.html`): renders any sprite, pose,
+  or animation step in isolation, with `?time=` clock override — never
+  loaded by index.html.
+- `fitArt()` measures the real glyph advance once (0.62 stays as the
+  fallback) and sizes the new grid; art color/glow moved to CSS custom
+  properties.
+
 ## v12.8 — 2026-07-29
 
 - ui.js cleanup: the idle caption is a single `IDLE` constant (was written

@@ -36,3 +36,17 @@ keep the whole 50 messages feeling coherent rather than random."
 Paradigm benchmark (classifier only, 840 held-out messages + 120 OOD):
 MiniLM embeddings 76.4% top-1 / OOD-separation J=0.82 vs classical TF-IDF
 64.6% / J=0.60. Not integrated (25 MB download vs zero-download design).
+
+## v12.11 — scene engine + dance route
+
+`node eval/run.js --convs 100 --msgs 100 --seed 12345`
+
+| overall | intent | ood misfire | reactive | name recall | repetition |
+|---------|--------|-------------|----------|-------------|------------|
+| 77.8    | 59.3   | 5.9         | 87.5     | 94.7        | 2.0        |
+
+Byte-identical to v12.8's row. The new `dance` scenario adds four
+prototypes, so this run confirms the global IDF shift changed no routing:
+the held-out bank contains no dance phrasings (its only `danc` hits are
+"guidance", which cannot collide — keyword matching is word-boundary).
+Scene-engine work is UI-side and never enters the eval sandbox.

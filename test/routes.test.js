@@ -87,3 +87,27 @@ test("continuations stay on the joke topic: more, more, then a fresh answer", as
   await b.pickReply("another one");
   assert.equal(b.mem.lastRoute, "cont:again:joke");
 });
+
+test("asking for a dance routes to the dance scenario, however it's phrased", async () => {
+  for (const msg of ["can you dance", "dance for me", "dance", "show me a dance",
+                     "do a little dance", "gooi a dansie", "will you dance for us"]) {
+    const b = loadBrain(7);
+    await b.pickReply(msg);
+    assert.match(b.mem.lastRoute, /^(regex|keyword|fuzzy-strong):dance(:\d\.\d{3})?$/, msg);
+  }
+});
+
+test("'guidance' is not a dance request", async () => {
+  const b = loadBrain(8);
+  await b.pickReply("I could use some guidance right now");
+  assert.doesNotMatch(b.mem.lastRoute, /dance/);
+});
+
+test("the dance route is one the UI knows how to act on", async () => {
+  /* mirrors ROUTE_ACTIONS in js/ui.js — if the route grammar for dance
+     changes, the scene would silently stop dancing */
+  const uiActs = [/^(regex|keyword|fuzzy-(strong|weak)):dance\b/, /^cont:again:dance\b/];
+  const b = loadBrain(9);
+  await b.pickReply("dance for me");
+  assert.ok(uiActs.some((re) => re.test(b.mem.lastRoute)), b.mem.lastRoute);
+});

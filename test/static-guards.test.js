@@ -28,7 +28,7 @@ test("index.html loads exactly the expected scripts — and never the LLM layer"
   const tags = [...html.matchAll(/<script src="([^"?]+)(?:\?v=([\d.]+))?"><\/script>/g)];
   assert.deepEqual(
     tags.map((m) => m[1]),
-    ["js/data/frames.js", "js/data/responses.js", "js/data/protos.js", "js/brain.js", "js/ui.js"],
+    ["js/data/frames.js", "js/data/sprites.js", "js/data/responses.js", "js/data/protos.js", "js/brain.js", "js/scene.js", "js/ui.js"],
   );
   /* the LLM layer must not load (and download a model) on page open */
   for (const m of tags) assert.doesNotMatch(m[1], /llm/i);
@@ -37,6 +37,6 @@ test("index.html loads exactly the expected scripts — and never the LLM layer"
 test("every ?v= tag equals VERSION in brain.js", () => {
   const version = read("js/brain.js").match(/const VERSION = "v([\d.]+)"/)[1];
   const tags = [...read("index.html").matchAll(/<script src="[^"?]+\?v=([\d.]+)"><\/script>/g)];
-  assert.equal(tags.length, 5);
+  assert.equal(tags.length, 7);
   for (const m of tags) assert.equal(m[1], version);
 });
