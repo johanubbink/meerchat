@@ -6,6 +6,71 @@ CLAUDE.md): the minor bumps on every change to the shipped site, and the
 `js/brain.js`. Eval scores are tracked separately in
 `eval/results/HISTORY.md`.
 
+## v12.16 — 2026-07-30
+
+- Tell her about a bird and she takes cover: the `danger` scenario gained a
+  sighting regex ("I see a bird", "is that a hawk?", "there's a vulture
+  circling", "look, an eagle") and `danger` routes now trigger the
+  `duck_react` scene action. Casual bird talk (the drongo, bird watching)
+  stays clear of it — pinned by routing tests, plus an end-to-end ui-wiring
+  test. Eval re-run: byte-identical row (see `eval/results/HISTORY.md`),
+  the frozen bank never touches the new regex.
+
+## v12.15 — 2026-07-30
+
+- Raised-arm tummy texture: the armless bases had filled the vacated arm
+  region with flat `=` fur, which cropped the dark belly ellipse and read as
+  a texture seam. The folded arms actually occlude the upper taper of that
+  ellipse (fully visible at rows 34–47), so the bases now reveal it — the
+  `#` patch extends to the belly contour (linear taper from chest span to
+  belly span) with the proper `*`/`+` boundary glyphs. The torso now reads
+  as the two stacked shading regions it is: cream chest patch over dark
+  belly oval, continuous whether an arm is up or folded.
+
+## v12.14 — 2026-07-30
+
+- Fixed the "three arms" bug: raising a rig arm left the baked-in folded arm
+  visible on the chest. Arm poses (wave, cheer, point) now ride armless bases
+  (`sentry_noarm_l/r/both` in `FD`) — row deltas generated from the frame
+  itself by remapping the folded-arm `-` shading to `=` fur, keeping the
+  silhouette edges and the chest boundary. A regression test pins that no
+  raised-arm pose retains folded-arm shading on the raised side.
+- Raised arms thickened (4-glyph core) to match the body's proportions.
+- Verified every animation (wave, cheer, wag, all four dances, duck-react,
+  the bird flyby) frame-by-frame with headless-Chrome contact sheets and
+  gifs via the scene lab, whose `?time=` now accepts seconds — the ambient
+  bird/star ride the seconds hand, so flybys are now capturable there too.
+
+## v12.13 — 2026-07-30
+
+- The meerkat becomes a segmented rig (`expandRig` in `js/scene.js`, `RIG`
+  data in `js/data/sprites.js`): the tail is carved out of the frames by
+  rect mask (it is a detached diagonal the skirt never crosses), heads swap
+  as bands, and new arms are additive overlays drawn onto the empty canvas
+  beside the torso — the image-derived art never needed a full redraw. Rig
+  poses compose into `F` at load, so downstream code treats them as plain
+  frames.
+- New poses: wave (two beats), cheer (both paws up), point left/right,
+  tail-up/tail-down wag pair, and a sleep pose (duck with the eyes rowed
+  shut). New animations: `wave`, `cheer`, `wag`, `duck_react`, and three
+  new dances — `dance_bounce`, `dance_moonwalk`, `dance_flourish` — with
+  dance requests drawing randomly from the pool (`S.DANCES`, picked in
+  `ui.js` so the scene engine stays pure).
+- The scene reacts to the chat: greetings and goodbyes wave
+  (`greetscen`/`byescen` routes), jokes earn a cheer, dances vary per ask.
+- Night behavior: after dark the idle loop becomes a nap (`idle_night`,
+  zzz captions, the odd startle) — `schedStep` takes an optional phase and
+  swaps the idle table, so dawn wakes her with no transition state.
+- Ambient sky visitors (`scene.ambient`): a deterministic, minute-seeded
+  shooting star at night and a bird flyby by day; when the bird passes
+  overhead an idle sentry ducks for cover. The reduced-motion still skips
+  them.
+- Tests: rig carve/compose invariants, the floor-stays-put check now runs
+  over every pose and every step of every animation, scheduler phase
+  behavior, ambient determinism, and ui-wiring tests for wave/cheer/nap/
+  duck-react — with the test harness clock now driving `Date`, so sky
+  phase and ambient events are deterministic in tests too.
+
 ## v12.12 — 2026-07-30
 
 - The stage gets a bit more height (46% → 52% of the viewport): the sky band

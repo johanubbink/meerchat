@@ -11,8 +11,9 @@ working when opened directly from disk (`file://`).
 index.html          shell: markup + script tags, loaded in order
 css/style.css       all styling (desert theme, chat bubbles, input bar)
 js/data/frames.js   ASCII-art meerkat poses (F), 141x73 each
-js/data/sprites.js  scene sprites (SPR: sun, moon, camelthorn trees) and
-                    extra poses as band splices (FD)
+js/data/sprites.js  scene sprites (SPR: sun, moon, trees, star, bird),
+                    extra poses as band splices (FD), and the meerkat
+                    rig (RIG: carve masks, part art, pose configs)
 js/data/responses.js  generic fallback pool (R), grouped by category; the
                       themed categories feed scenario answer pools
 js/data/protos.js   extra prototype sentences + keywords per scenario (data)
@@ -159,16 +160,55 @@ cannot be separated by column. They do differ in clean horizontal bands (head
 rows 0–16, tail rows 54–70), so `spliceRows()` composes new poses from bands
 of existing ones — the dance poses in `FD` are a head band from
 look-left/right/blink over a tail band from the flick. `expandFrames()` merges
-them into `F` at load; it also accepts plain row deltas.
+them into `F` at load; it also accepts plain row deltas (`sleep` is duck with
+the eye row shut).
 
-**Scheduler.** Pure state machine: `mkSched()`, `schedStep(state)` and
+**The rig (v12.13).** Beyond bands, two more seams turned out to be usable:
+the tail is a *detached* diagonal right of the skirt — the skirt never
+crosses col 90 — so `carvePart()` can cut it out by rect mask (and the part
+remembers its anchor, so re-blitting it is the identity, which a test pins);
+and the canvas beside the torso is empty at shoulder height, so new arms are
+*additive* overlay sprites (wave, cheer, point) drawn in the frames' charset.
+Because the resting arms are baked into the chest as the `-` shading flanking
+the `#` patch (rows 20–33), a raised arm must ride an *armless* base —
+`sentry_noarm_l/r/both` in `FD` — otherwise the pose grows extra arms; a test
+pins this. The folded arms occlude the upper taper of the dark belly ellipse
+(fully visible at rows 34–47), so those bases *reveal* it rather than paint
+flat fur: row deltas generated from the frame itself extend the `#` patch to
+the belly contour (linear taper from the chest span to the belly span), with
+the usual `*`/`+` boundary glyphs and the silhouette edges kept. A rig pose
+config (`RIG.poses` in `js/data/sprites.js`) is a base frame + optional head
+band + optional tail swap (erase the tail rect, blit a replacement tail:
+up/down for the wag) + overlays; `expandRig()` composes each config into `F`
+at load with the same
+`makeGrid`/`blit` primitives the scene uses, so downstream code — `katPose`,
+the scheduler, the scene lab's `?frame=` — treats rig poses as ordinary
+frames. Rows 71–72 (baked feet/ground marks) are never composed over.
+
+**Ambient events.** `ambient(date, phase, SPR)` adds rare sky visitors: a
+shooting star at night, a bird flyby by day. Each minute is seeded on its own
+calendar identity (mulberry32 again), a lucky minute gets one event at a
+seeded start second, and the sprite's position is a pure function of the
+seconds hand — successive renders animate it with no stored state. The bird
+returns `event: "bird"` while overhead (cols 48–92); `ui.js` turns that into
+a `duck_react` scene action when the sentry is idling. `renderFrame(...,
+opts)` takes `{ambient: false}` for the reduced-motion still.
+
+**Scheduler.** Pure state machine: `mkSched()`, `schedStep(state, phase?)` and
 `schedRequest(state, action)`. Steps are `[frame, caption, holdMs, dx, dy]`,
 where `dx`/`dy` shift only the meerkat — the scenery and the dune stay put,
 which is what makes the dance's sway and hop read as movement. `ANIMS.idle`
 loops; any other animation plays once and falls back to idle step 0.
-Duplicate requests for the animation already playing, and unknown names, are
-dropped. `ui.js` owns the single timer, so an action never spawns a second
-animation chain (the pre-v12.9 loop was an uncancellable `setTimeout` chain).
+At night (`phase === "night"`) the idle table is swapped for `idle_night` —
+the nap: sleep pose, long holds, the odd startle — while `state.mode` stays
+`"idle"`, so dawn wakes her with no transition bookkeeping (the step index
+clamps when the tables' lengths differ). Duplicate requests for the animation
+already playing, and unknown names, are dropped. `ui.js` owns the single
+timer, so an action never spawns a second animation chain (the pre-v12.9 loop
+was an uncancellable `setTimeout` chain). `DANCES` lists the four dance
+animations (`dance`, `dance_bounce`, `dance_moonwalk`, `dance_flourish`);
+the random pick per dance request happens in `ui.js` — `Math.random` stays
+banned in the engine.
 
 ## UI (js/ui.js)
 
@@ -178,10 +218,13 @@ animation chain (the pre-v12.9 loop was an uncancellable `setTimeout` chain).
   animation. Under `prefers-reduced-motion` there is no loop at all — a still
   composed scene, refreshed every 30 s so the sky still follows the clock, and
   `runAction` is a no-op.
-- `ROUTE_ACTIONS` maps the route the brain just took to a scene animation
-  (`regex|keyword|fuzzy-*:dance` and `cont:again:dance` → the dance). The brain
-  stays presentation-agnostic; this table is also the seam a future
-  pointer/tap layer will call `runAction()` through.
+- `ROUTE_ACTIONS` maps the route the brain just took to a scene animation:
+  dance routes draw a random member of `S.DANCES`, greetings and goodbyes
+  (`greetscen`/`byescen`) wave, jokes earn a cheer, and `danger` routes
+  (reported sightings: "I see a bird", "is that a hawk?") duck for cover.
+  An entry's action may be a string or a function returning one (the dance
+  pick). The brain stays presentation-agnostic; this table is also the seam
+  a future pointer/tap layer will call `runAction()` through.
 - `fitArt()` solves the font size so the grid fits `min(bodyWidth-8, 760)` by
   40% of the viewport height, clamped to 3–10 px. The glyph advance ratio is
   measured once from a probe span (0.62 is the fallback); the 1.02 factor
@@ -211,12 +254,14 @@ Two tiers:
   modules in `js/`, no `llm*.js` script tag in `index.html`, every `?v=`
   equal to `VERSION`). They reuse `eval/lib/loadBrain.js`, so they exercise
   the same seeded vm sandbox as the eval. Two of them cover the visual layer:
-  `test/scene.test.js` pins the compositor, the sky phases, the scheduler and
-  the stationary-floor invariant, and `test/ui-wiring.test.js` runs the real
-  `js/ui.js` against a DOM stub and a controllable clock (boot, the idle lap,
-  chat → route → dance, reduced motion) — the only automated coverage of the
-  page's script load order and of interaction, which headless screenshots
-  cannot exercise.
+  `test/scene.test.js` pins the compositor, the sky phases, the rig
+  (carve identity, pose invariants), the ambient determinism, the scheduler
+  and the stationary-floor invariant (over every pose and every animation
+  step), and `test/ui-wiring.test.js` runs the real `js/ui.js` against a DOM
+  stub and a controllable clock that also drives `Date` (boot, the idle lap,
+  chat → route → dance/wave/cheer, the night nap, the bird flyby, reduced
+  motion) — the only automated coverage of the page's script load order and
+  of interaction, which headless screenshots cannot exercise.
 - **Scored eval** (`eval/`): simulates 100 seeded conversations x 100
   messages against the unmodified production brain and scores every response
   deterministically against a frozen rubric; an LLM-judge protocol scores
