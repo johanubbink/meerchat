@@ -6,6 +6,18 @@ CLAUDE.md): the minor bumps on every change to the shipped site, and the
 `js/brain.js`. Eval scores are tracked separately in
 `eval/results/HISTORY.md`.
 
+## v12.10 — 2026-07-30
+
+- Scenery: two camelthorn acacias on the dune, drawn as flat-crowned
+  silhouettes with visible limbs converging on the trunk (an earlier pass
+  read as wine glasses — a wide crown over a hairline stem needs branches
+  to read as a tree). They use lighter glyphs than the meerkat's dense
+  fills so they sit back as distant background.
+- Sun and moon redrawn: the sun is a rayed disc, the moon a crescent with
+  pointed horns, both legible at the ~4–8 px scene font size.
+- Scene lab gained `?fs=` to render a sprite at a large font for detail
+  review.
+
 ## v12.9 — 2026-07-29
 
 - Scene engine: the stage is now a composed scene (`js/scene.js`, pure and

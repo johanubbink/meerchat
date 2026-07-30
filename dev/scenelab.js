@@ -28,6 +28,7 @@ function withRuler(text) {
 }
 
 function show(text, note, phase) {
+  if (q.get("fs")) artEl.style.fontSize = q.get("fs") + "px";
   artEl.textContent = q.get("grid") ? withRuler(text) : text;
   document.body.className = phase ? "phase-" + phase : "";
   infoEl.textContent = q.get("bare") ? "" : note;
