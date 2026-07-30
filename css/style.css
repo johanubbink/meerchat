@@ -21,7 +21,7 @@ html, body {
 }
 body { display: flex; flex-direction: column; }
 .stage { flex: 0 0 auto; text-align: center; padding: 8px 0 2px;
-         max-height: 46vh; max-height: 46dvh; overflow: hidden; }
+         max-height: 52vh; max-height: 52dvh; overflow: hidden; }
 pre#art {
   font-size: min(10px, 1.08vw); line-height: 1.02; /* 1.02 mirrored in ui.js fitArt() */
   color: var(--ink); margin: 0 auto; white-space: pre;

@@ -7,7 +7,7 @@
    -> scenario keywords -> ELIZA -> fuzzy(weak) -> pending-ack
    -> memory callback -> sentiment+pool */
 
-const VERSION = "v12.11";
+const VERSION = "v12.12";
 const mem = { name:null, turns:0, lastScen:null, moreIdx:0, pending:true,
               topics:[], lastCb:0, history:[], awaitName:3, lastRoute:null };
 

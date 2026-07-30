@@ -10,7 +10,9 @@ working when opened directly from disk (`file://`).
 ```
 index.html          shell: markup + script tags, loaded in order
 css/style.css       all styling (desert theme, chat bubbles, input bar)
-js/data/frames.js   ASCII-art animation frames (F)
+js/data/frames.js   ASCII-art meerkat poses (F), 141x73 each
+js/data/sprites.js  scene sprites (SPR: sun, moon, camelthorn trees) and
+                    extra poses as band splices (FD)
 js/data/responses.js  generic fallback pool (R), grouped by category; the
                       themed categories feed scenario answer pools
 js/data/protos.js   extra prototype sentences + keywords per scenario (data)
@@ -18,7 +20,10 @@ js/brain.js         all chat logic, no DOM access (testable in Node)
 js/llmShared.js     clever-brain prompt code shared with the eval (persona
                     bible, prompt builder, sanitizer; pure functions)
 js/llm.js           clever brain: optional on-device LLM layer (v13, not loaded)
-js/ui.js            DOM wiring: animation loop, art scaling, chat bubbles
+js/scene.js         scene engine: ASCII compositor, sky clock, animation
+                    scheduler — pure, no DOM (testable in Node)
+js/ui.js            DOM wiring: scene painting, art scaling, chat bubbles
+dev/scenelab.html   dev-only sprite/pose/animation viewer (never shipped)
 test/               node:test suite pinning brain behavior (node --test test/)
 ```
 
@@ -26,8 +31,8 @@ Scripts are classic (non-module) tags so `file://` keeps working. Two files
 use a dual-load guard so the same source runs in the browser and in Node:
 `js/brain.js` never touches `document`/`window` except to export
 `window.__meer` when a window exists (the eval and the unit tests load it in
-a bare vm), and `js/llmShared.js` ends with a `module.exports` tail that is
-inert in the browser and makes it a CommonJS module under `require()`.
+a bare vm), and `js/llmShared.js` and `js/scene.js` end with a `module.exports` tail that
+is inert in the browser and makes them CommonJS modules under `require()`.
 
 ## The brain (js/brain.js, v12)
 
@@ -107,12 +112,92 @@ the pool is exhausted, never twice in a row. `{W}` fills with the user's name
 or one nickname per message (capitalized at sentence starts); `{TOD}`/`{DAY}`
 fill from the clock.
 
+## Scene engine (js/scene.js)
+
+The stage is a composed scene, not a single art string. `js/scene.js` holds the
+whole model and is pure: no DOM, no timers, no `Math.random`, no clock of its
+own (the date is passed in), so the unit tests drive it directly.
+
+**Compositor.** A scene is a list of sprites `{art, x, y, z}` blitted into one
+`GRID.cols x GRID.rows` (141x88) character grid and joined to a single string,
+which `ui.js` writes with one `textContent` assignment. In sprite art a space
+is transparent and `~` is an opaque space (`~` is outside the frames' charset
+`# ' * + - . : = @ ^`). `blit` clips on all four edges, so a sprite may hang
+off the grid — that is how the sun rises through the left edge. Z-order is
+ground 0, stars 1, sun/moon 2, trees 5, meerkat 10. Every tick rebuilds the
+whole grid; at ~12 KB and roughly 1–7 writes/second there is nothing to
+optimise, and no `requestAnimationFrame` loop.
+
+**The meerkat and the stationary floor.** The six generated poses in
+`frames.js` are used verbatim as one bottom-anchored sprite. Two corrections
+are applied on the way in:
+
+- `KAT_DY` — the `duck` frame was drawn with its ground line two rows higher
+  than every other pose, which made the floor visibly jump. It is blitted two
+  rows lower so every pose shares one baseline.
+- `katPose()` — each frame has the dune line *baked into* its bottom rows
+  (`KAT_GROUND_ROWS`). Those dots are stripped so the scene's ground layer is
+  the only floor; the feet and shadow marks on the same rows are kept, since
+  they belong to the meerkat and should travel with her. Without this, any
+  vertical move (the dance's hop) drags a second horizon up the screen.
+
+`test/scene.test.js` pins the result: composing every pose, and every step of
+the dance with its offsets, must leave the dune line on exactly the same two
+grid rows.
+
+**Sky clock.** `skyState(date)` returns a phase — `dawn` / `day` / `sunset` /
+`night`, banded to match the brain's `tod()` — plus a sun position on a
+parabolic arc (06:00–19:00), a moon on the night arc, and a star field seeded
+by day-of-year with mulberry32, so the stars are fixed for a given night and
+differ the next. `ui.js` copies the phase to `body[data-phase]`; the palette
+(ink, glow, sky gradient) is CSS custom properties, so day/night is a
+page-wide colour shift rather than per-cell colour in the grid.
+
+**Poses beyond the six.** The frames are image-derived: every torso row is a
+single continuous ink run, with the paws shaded into the chest, so limbs
+cannot be separated by column. They do differ in clean horizontal bands (head
+rows 0–16, tail rows 54–70), so `spliceRows()` composes new poses from bands
+of existing ones — the dance poses in `FD` are a head band from
+look-left/right/blink over a tail band from the flick. `expandFrames()` merges
+them into `F` at load; it also accepts plain row deltas.
+
+**Scheduler.** Pure state machine: `mkSched()`, `schedStep(state)` and
+`schedRequest(state, action)`. Steps are `[frame, caption, holdMs, dx, dy]`,
+where `dx`/`dy` shift only the meerkat — the scenery and the dune stay put,
+which is what makes the dance's sway and hop read as movement. `ANIMS.idle`
+loops; any other animation plays once and falls back to idle step 0.
+Duplicate requests for the animation already playing, and unknown names, are
+dropped. `ui.js` owns the single timer, so an action never spawns a second
+animation chain (the pre-v12.9 loop was an uncancellable `setTimeout` chain).
+
 ## UI (js/ui.js)
 
-- Animation: fixed frame sequence (sentry, blink, look left/right, tail
-  flick, duck) with per-frame hold times; respects `prefers-reduced-motion`.
-- `fitArt()` scales the ASCII art to the viewport.
+- Paints the scene: `draw()` calls `scene.renderFrame(new Date(), pose, F,
+  SPR, off)` and assigns `art.textContent` plus `body.dataset.phase`.
+- One `loop()` driven by `schedStep`; `runAction(name)` queues a scene
+  animation. Under `prefers-reduced-motion` there is no loop at all — a still
+  composed scene, refreshed every 30 s so the sky still follows the clock, and
+  `runAction` is a no-op.
+- `ROUTE_ACTIONS` maps the route the brain just took to a scene animation
+  (`regex|keyword|fuzzy-*:dance` and `cont:again:dance` → the dance). The brain
+  stays presentation-agnostic; this table is also the seam a future
+  pointer/tap layer will call `runAction()` through.
+- `fitArt()` solves the font size so the grid fits `min(bodyWidth-8, 760)` by
+  40% of the viewport height, clamped to 3–10 px. The glyph advance ratio is
+  measured once from a probe span (0.62 is the fallback); the 1.02 factor
+  mirrors `line-height` in `css/style.css`.
 - Chat: user bubble, "..." typing indicator, reply after a 500–1200 ms delay.
+
+## Dev: the scene lab (dev/scenelab.html)
+
+Dev-only, never loaded by `index.html` (the static guards pin that page's
+script list). It renders one sprite, pose, or animation step in isolation from
+`file://`, which is how the sprites were iterated on and how the floor fix was
+verified. Query params: `?sprite=` / `?frame=` / `?anim=` with `?step=N`
+(deterministic, no timers) or `?play=1` (live), `?time=HH:MM` to override the
+clock, `?fs=N` for a large font, `?grid=1` for a row/col ruler, `?bare=1` to
+drop the info line. See `dev/README.md` for the headless-Chrome screenshot and
+screencast commands.
 
 ## Testing & evaluation
 
@@ -125,7 +210,13 @@ Two tiers:
   plus static guards for the hard constraints (no DOM in brain.js, no
   modules in `js/`, no `llm*.js` script tag in `index.html`, every `?v=`
   equal to `VERSION`). They reuse `eval/lib/loadBrain.js`, so they exercise
-  the same seeded vm sandbox as the eval.
+  the same seeded vm sandbox as the eval. Two of them cover the visual layer:
+  `test/scene.test.js` pins the compositor, the sky phases, the scheduler and
+  the stationary-floor invariant, and `test/ui-wiring.test.js` runs the real
+  `js/ui.js` against a DOM stub and a controllable clock (boot, the idle lap,
+  chat → route → dance, reduced motion) — the only automated coverage of the
+  page's script load order and of interaction, which headless screenshots
+  cannot exercise.
 - **Scored eval** (`eval/`): simulates 100 seeded conversations x 100
   messages against the unmodified production brain and scores every response
   deterministically against a frozen rubric; an LLM-judge protocol scores

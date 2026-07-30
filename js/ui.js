@@ -48,7 +48,10 @@ function glyphRatio() {
 const ADV = glyphRatio();
 function fitArt() {
   const w = Math.min(document.body.clientWidth - 8, 760);
-  const h = window.innerHeight * 0.40;
+  /* 0.46 of the viewport, not 0.40: the grid grew from 73 to 88 rows when the
+     sky band was added, and this keeps the meerkat about the size she was
+     before it. Must stay under .stage's max-height in css/style.css. */
+  const h = window.innerHeight * 0.46;
   const fsW = w / (S.GRID.cols * ADV);
   const fsH = h / (S.GRID.rows * 1.02); /* 1.02 = line-height in css/style.css */
   art.style.fontSize = Math.max(3, Math.min(10, fsW, fsH)) + "px";

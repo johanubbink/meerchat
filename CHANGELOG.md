@@ -6,6 +6,16 @@ CLAUDE.md): the minor bumps on every change to the shipped site, and the
 `js/brain.js`. Eval scores are tracked separately in
 `eval/results/HISTORY.md`.
 
+## v12.12 — 2026-07-30
+
+- The stage gets a bit more height (46% → 52% of the viewport): the sky band
+  grew the grid from 73 to 88 rows, which had shrunk the meerkat; she is now
+  about the size she was before the scene landed. Checked at 980px and 390px.
+- Documented the scene engine in `docs/ARCHITECTURE.md` (compositor contract,
+  the stationary-floor corrections, sky clock, band splicing, scheduler, the
+  route→action seam) and added `dev/README.md` with the headless-Chrome
+  verification recipes and the sprite-drawing notes.
+
 ## v12.11 — 2026-07-30
 
 - Ask Tsamma to dance and she does: "dance for me", "gooi a dansie" and
