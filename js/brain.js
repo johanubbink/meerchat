@@ -7,7 +7,7 @@
    -> scenario keywords -> ELIZA -> fuzzy(weak) -> pending-ack
    -> memory callback -> sentiment+pool */
 
-const VERSION = "v12.12";
+const VERSION = "v12.16";
 const mem = { name:null, turns:0, lastScen:null, moreIdx:0, pending:true,
               topics:[], lastCb:0, history:[], awaitName:3, lastRoute:null };
 
@@ -505,7 +505,11 @@ const SCEN = [
  a:["Can't go wrong with a braai, {W}. Boerewors, tjops, and something for the fire to think about.",
     "Eat what you can catch! Or, ja, whatever's in the fridge. A fridge — imagine, a burrow that keeps food cold. You people."]},
 
-{id:"danger", protos:["watch out, there is a dangerous predator","I'm frightened, is it safe here"],
+{id:"danger",
+ /* a reported sighting ("I see a bird", "there's a hawk", "look, an eagle")
+    must land here reliably — the scene ducks on this route */
+ re:/\b(i (can )?see|i spott?ed|there('| i)?s|look,?( it'?s)?|is that) an? ?(bird|hawk|eagle|raptor|vulture)\b|\b(bird|hawk|eagle|raptor|vulture)s? (above|overhead|circling|in the sky|incoming)\b/i,
+ protos:["watch out, there is a dangerous predator","I'm frightened, is it safe here"],
  kw:["dangerous","predator","is it safe","watch out","snake","eagle"],
  a:["Trust your gut, {W}. If the birds go quiet, something's wrong. Works in the Kalahari, works everywhere.",
     "Eyes up, ears open, and know where your nearest burrow is. You'll be fine — you've got a sentry on your side now."]},

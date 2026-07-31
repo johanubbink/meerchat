@@ -111,3 +111,23 @@ test("the dance route is one the UI knows how to act on", async () => {
   await b.pickReply("dance for me");
   assert.ok(uiActs.some((re) => re.test(b.mem.lastRoute)), b.mem.lastRoute);
 });
+
+test("a reported bird sighting lands on danger, however it's phrased", async () => {
+  /* the scene ducks on this route (ROUTE_ACTIONS in js/ui.js), so the
+     sighting phrasings must land there deterministically */
+  for (const msg of ["I see a bird", "is that a hawk?", "there is a bird in the sky",
+                     "I spotted an eagle", "look, a hawk!", "there's a vulture circling above"]) {
+    const b = loadBrain(11);
+    await b.pickReply(msg);
+    assert.match(b.mem.lastRoute, /^(regex|keyword|fuzzy-strong):danger(:\d\.\d{3})?$/, msg);
+  }
+});
+
+test("casual bird talk is not a danger sighting", async () => {
+  for (const msg of ["do you like birds?", "tell me about the drongo bird",
+                     "my friend is a bird watcher"]) {
+    const b = loadBrain(12);
+    await b.pickReply(msg);
+    assert.doesNotMatch(b.mem.lastRoute, /danger/, msg);
+  }
+});

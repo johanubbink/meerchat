@@ -53,6 +53,7 @@ function mkClock() {
   let now = 0, seq = 0;
   const q = [];
   return {
+    now: () => now,
     setTimeout: (fn, ms) => { q.push({ at: now + (ms || 0), i: seq++, fn }); return q.length; },
     setInterval: (fn, ms) => { q.push({ at: now + (ms || 0), i: seq++, fn, every: ms }); return 0; },
     clearTimeout() {},
@@ -76,13 +77,22 @@ function mkClock() {
   };
 }
 
-function boot({ reducedMotion = false } = {}) {
+function boot({ reducedMotion = false, hour = 12, minute = 4 } = {}) {
   const dom = mkDom();
   const clock = mkClock();
   const win = {
     matchMedia: () => ({ matches: reducedMotion }),
     addEventListener() {},
     innerHeight: 760,
+  };
+  /* pin the wall clock to the virtual one: `new Date()` follows clock.run,
+     so the sky phase, the night nap and the ambient events are all
+     deterministic. 12:04 is a verified bird-free minute; 12:00 has a bird
+     flyby (sec 8-24) and any evening hour lands in the night nap. */
+  const t0 = new Date(2026, 0, 14, hour, minute, 0).getTime();
+  const FakeDate = class extends Date {
+    constructor(...a) { a.length ? super(...a) : super(t0 + clock.now()); }
+    static now() { return t0 + clock.now(); }
   };
   const ctx = {
     window: win,
@@ -92,6 +102,7 @@ function boot({ reducedMotion = false } = {}) {
     setInterval: clock.setInterval,
     clearTimeout: clock.clearTimeout,
     clearInterval: clock.clearInterval,
+    Date: FakeDate,
     Math: Object.assign(Object.create(Math), { random: () => 0.5 }),
   };
   win.window = win;
@@ -145,34 +156,93 @@ test("the idle animation advances through poses on its own", async () => {
 test("asking for a dance makes the scene dance", async () => {
   const { ctx, dom, clock, probe } = boot();
   await clock.run(50);
+  /* sample captions from the click onward — some of the new anims are
+     shorter than the reply delay plus a coarse wait would allow */
   dom.els.inp.value = "dance for me";
   dom.els.send.fire("click");
-  await clock.run(3000);
+  const shuffleSeen = [];
+  for (let i = 0; i < 40; i++) { shuffleSeen.push(dom.els.cap.textContent); await clock.run(200); }
   /* the brain answered in character... */
   assert.ok(dom.els.chat.children.length >= 3, "user bubble + reply bubble were added");
   assert.match(probe().mem.lastRoute, /dance/, "the brain took the dance route");
-  /* ...and the scene ran the dance: its captions are distinctive */
-  const shuffleSeen = [];
-  for (let i = 0; i < 14; i++) {
-    shuffleSeen.push(dom.els.cap.textContent);
-    await clock.run(400);
-  }
+  /* ...and the scene ran one of the dances: their captions are
+     distinctive (Math.random is pinned to 0.5, so the pick is stable) */
   assert.ok(
-    shuffleSeen.some((c) => /shuffle|hop/.test(c)),
-    "the dance captions appeared: " + JSON.stringify(shuffleSeen.slice(0, 6))
+    shuffleSeen.some((c) => /shuffle|hop|moonwalk|bounce|spin|flourish|ta-da/i.test(c)),
+    "the dance captions appeared: " + JSON.stringify([...new Set(shuffleSeen)])
+  );
+});
+
+test("a greeting makes the sentry wave", async () => {
+  const { dom, clock, probe } = boot();
+  await clock.run(50);
+  dom.els.inp.value = "howzit tsamma";
+  dom.els.send.fire("click");
+  const caps = [];
+  for (let i = 0; i < 30; i++) { caps.push(dom.els.cap.textContent); await clock.run(200); }
+  assert.match(probe().mem.lastRoute, /greetscen/, "the brain took the greeting route");
+  assert.ok(caps.some((c) => /aweh|waves/.test(c)), "wave captions: " + JSON.stringify([...new Set(caps)]));
+});
+
+test("a joke earns a cheer", async () => {
+  const { dom, clock, probe } = boot();
+  await clock.run(50);
+  dom.els.inp.value = "tell me a joke";
+  dom.els.send.fire("click");
+  const caps = [];
+  for (let i = 0; i < 30; i++) { caps.push(dom.els.cap.textContent); await clock.run(200); }
+  assert.match(probe().mem.lastRoute, /joke/, "the brain took the joke route");
+  assert.ok(caps.some((c) => /yebo/.test(c)), "cheer captions: " + JSON.stringify([...new Set(caps)]));
+});
+
+test("telling her about a bird sends her into cover", async () => {
+  const { dom, clock, probe } = boot();
+  await clock.run(50);
+  dom.els.inp.value = "I see a bird";
+  dom.els.send.fire("click");
+  const caps = [];
+  for (let i = 0; i < 30; i++) { caps.push(dom.els.cap.textContent); await clock.run(200); }
+  assert.match(probe().mem.lastRoute, /danger/, "the brain took the danger route");
+  assert.ok(
+    caps.some((c) => /hawk|korhaan/.test(c)),
+    "duck captions: " + JSON.stringify([...new Set(caps)])
   );
 });
 
 test("an ordinary message does not trigger a scene action", async () => {
   const { dom, clock, probe } = boot();
   await clock.run(50);
-  dom.els.inp.value = "tell me a joke";
+  dom.els.inp.value = "i had a long day at work";
   dom.els.send.fire("click");
   await clock.run(3000);
-  assert.doesNotMatch(probe().mem.lastRoute, /dance/);
+  assert.doesNotMatch(probe().mem.lastRoute, /dance|greetscen|joke/);
   const caps = [];
   for (let i = 0; i < 12; i++) { caps.push(dom.els.cap.textContent); await clock.run(400); }
-  assert.ok(!caps.some((c) => /shuffle|hop/.test(c)), "no dance captions: " + JSON.stringify(caps));
+  assert.ok(
+    !caps.some((c) => /shuffle|hop|moonwalk|bounce|ta-da|aweh|waves|yebo/i.test(c)),
+    "no action captions: " + JSON.stringify(caps)
+  );
+});
+
+test("at night the sentry naps, and dawn wakes her", async () => {
+  const { dom, clock } = boot({ hour: 22, minute: 0 });
+  await clock.run(50);
+  const caps = new Set();
+  for (let i = 0; i < 20; i++) { caps.add(dom.els.cap.textContent); await clock.run(500); }
+  assert.ok([...caps].some((c) => /zzz/.test(c)), "nap captions: " + JSON.stringify([...caps]));
+  assert.equal(dom.document.body.dataset.phase, "night");
+});
+
+test("a bird flying overhead sends her into cover", async () => {
+  /* 12:00 on the pinned day has a bird flyby starting at second 8 */
+  const { dom, clock } = boot({ hour: 12, minute: 0 });
+  await clock.run(50);
+  const caps = new Set();
+  for (let i = 0; i < 50; i++) { caps.add(dom.els.cap.textContent); await clock.run(500); }
+  assert.ok(
+    [...caps].some((c) => /hawk|korhaan/.test(c)),
+    "duck_react captions: " + JSON.stringify([...caps])
+  );
 });
 
 test("reduced motion: a still scene, no animation loop, no dancing", async () => {

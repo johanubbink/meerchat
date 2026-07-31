@@ -1,25 +1,31 @@
 /* ---------- scene & animation ---------- */
 const S = window.__scene;
 S.expandFrames(F, FD);
+S.expandRig(F, RIG);
 const art = document.getElementById("art");
 const capEl = document.getElementById("cap");
 const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/* compose the scene (sky, ground, trees, meerkat) for one pose and paint it */
-function draw(frame, caption, off) {
-  const out = S.renderFrame(new Date(), frame, F, SPR, off);
+/* compose the scene (sky, ground, trees, meerkat) for one pose and paint it.
+   Returns the ambient event (if any) so the loop can react to the sky. */
+function draw(frame, caption, off, opts) {
+  const out = S.renderFrame(new Date(), frame, F, SPR, off, opts);
   art.textContent = out.text;
   document.body.dataset.phase = out.phase;
   capEl.textContent = caption;
+  return out.event;
 }
 
 /* one loop, one timer: actions never spawn a second chain — runAction only
    queues a request that the next schedStep consumes */
 let schedState = S.mkSched();
 function loop() {
-  const step = S.schedStep(schedState);
+  const phase = S.skyState(new Date()).phase;
+  const step = S.schedStep(schedState, phase);
   schedState = step.state;
-  draw(step.frame, step.caption, step.off);
+  const event = draw(step.frame, step.caption, step.off);
+  /* a raptor overhead sends an idle sentry into cover */
+  if (event === "bird" && schedState.mode === "idle") runAction("duck_react");
   setTimeout(loop, step.hold);
 }
 
@@ -30,9 +36,9 @@ function runAction(name) {
 }
 
 if (still) {
-  draw("sentry", S.IDLE_CAPTION);
+  draw("sentry", S.IDLE_CAPTION, null, { ambient: false });
   /* no motion, but the sky still follows the clock (discrete updates) */
-  setInterval(() => draw("sentry", S.IDLE_CAPTION), 30000);
+  setInterval(() => draw("sentry", S.IDLE_CAPTION, null, { ambient: false }), 30000);
 } else loop();
 
 /* fit the scene grid to the viewport; glyph advance measured once (0.62 fallback) */
@@ -78,11 +84,20 @@ function bubble(text, whoCls) {
   chat.scrollTop = chat.scrollHeight;
   return body;
 }
-/* route pattern -> scene action. Pointer input will call runAction() with
-   the same names once that layer lands. */
+/* route pattern -> scene action (a string, or a function for a per-hit
+   pick). Pointer input will call runAction() with the same names once
+   that layer lands. Dance requests draw from S.DANCES so repeat "dance!"
+   messages get variety — the random pick lives here, scene.js stays pure. */
+const pickDance = () => S.DANCES[Math.floor(Math.random() * S.DANCES.length)];
 const ROUTE_ACTIONS = [
-  [/^(regex|keyword|fuzzy-(strong|weak)):dance\b/, "dance"],
-  [/^cont:again:dance\b/, "dance"],
+  [/^(regex|keyword|fuzzy-(strong|weak)):dance\b/, pickDance],
+  [/^cont:again:dance\b/, pickDance],
+  [/^(regex|keyword|fuzzy-(strong|weak)):greetscen\b/, "wave"],
+  [/^(regex|keyword|fuzzy-(strong|weak)):byescen\b/, "wave"],
+  [/^(regex|keyword|fuzzy-(strong|weak)):joke\b/, "cheer"],
+  [/^cont:again:joke\b/, "cheer"],
+  /* the user reports a threat ("I see a bird!") — the sentry takes cover */
+  [/^(regex|keyword|fuzzy-(strong|weak)):danger\b/, "duck_react"],
 ];
 let busy = false;
 function go() {
@@ -103,7 +118,7 @@ function go() {
     /* the route the brain took decides whether the scene does something —
        the brain itself stays presentation-agnostic */
     const act = ROUTE_ACTIONS.find(([re]) => re.test(mem.lastRoute || ""));
-    if (act) runAction(act[1]);
+    if (act) runAction(typeof act[1] === "function" ? act[1]() : act[1]);
     busy = false;
   }, delay);
 }

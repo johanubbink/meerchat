@@ -50,3 +50,17 @@ prototypes, so this run confirms the global IDF shift changed no routing:
 the held-out bank contains no dance phrasings (its only `danc` hits are
 "guidance", which cannot collide — keyword matching is word-boundary).
 Scene-engine work is UI-side and never enters the eval sandbox.
+
+## v12.16 — bird-sighting regex on the danger scenario
+
+`node eval/run.js --convs 100 --msgs 100 --seed 12345`
+
+| overall | intent | ood misfire | reactive | name recall | repetition |
+|---------|--------|-------------|----------|-------------|------------|
+| 77.8    | 59.3   | 5.9         | 87.5     | 94.7        | 2.0        |
+
+Byte-identical to the v12.11 row. `danger` gained a regex so reported
+sightings ("I see a bird", "there's a hawk", "look, an eagle") land on it
+deterministically — the scene ducks on that route. Zero responses in this
+run route via `danger` at all, so the regex changed no bank routing; the
+full record dump is `v12.16-danger-sighting.json`.

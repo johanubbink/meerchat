@@ -9,10 +9,10 @@ const assert = require("node:assert/strict");
 const { read } = require("./helpers");
 
 const scene = require("../js/scene.js");
-const { SPR, FD } = require("../js/data/sprites.js");
-const F = scene.expandFrames(
-  new Function(read("js/data/frames.js") + ";return F;")(),
-  FD
+const { SPR, FD, RIG } = require("../js/data/sprites.js");
+const F = scene.expandRig(
+  scene.expandFrames(new Function(read("js/data/frames.js") + ";return F;")(), FD),
+  RIG
 );
 
 const NOON = new Date(2026, 0, 14, 12, 0, 0);
@@ -170,6 +170,150 @@ test("dance poses exist, are full-height, and never splice the ground rows", () 
   /* the splice really produced something new */
   assert.notEqual(F.dance_l, F.sentry);
   assert.notEqual(F.dance_l, F.look_left);
+});
+
+test("carvePart: re-blitting the carved tail at its anchor is the identity", () => {
+  const part = scene.carvePart(F, { from: "sentry", rows: [56, 70], cols: [90, 112] });
+  assert.equal(part.x, 90);
+  assert.equal(part.y, 56);
+  const g = scene.makeGrid(scene.GRID.cols, 73);
+  scene.blit(g, F.sentry.split("\n"), 0, 0);
+  scene.blit(g, part.art, part.x, part.y);
+  const out = g.map((r) => r.join("").replace(/ +$/, "")).join("\n");
+  assert.equal(out, F.sentry.split("\n").map((r) => r.replace(/ +$/, "")).join("\n"));
+});
+
+test("rig poses: expanded into F, full height, ground rows untouched, genuinely new", () => {
+  const sentry = F.sentry.split("\n");
+  for (const name of Object.keys(RIG.poses)) {
+    assert.ok(F[name], `${name} expanded into F`);
+    const rows = F[name].split("\n");
+    assert.equal(rows.length, sentry.length, `${name} is full height`);
+    /* rows 71-72 carry the baked feet/ground marks — never composed over */
+    assert.equal(rows[71], sentry[71].replace(/ +$/, ""), `${name} row 71`);
+    assert.equal(rows[72], sentry[72].replace(/ +$/, ""), `${name} row 72`);
+    assert.notEqual(F[name], F.sentry, `${name} differs from sentry`);
+  }
+  /* a tail swap really removed the resting tail: wag_up has no ink in the
+     old tail's lower reach (rows 63-68 beyond col 95) */
+  const up = F.wag_up.split("\n");
+  for (let r = 63; r <= 68; r++) {
+    assert.equal((up[r] || "").slice(95).trim(), "", `wag_up row ${r} tail gone`);
+  }
+});
+
+test("a raised arm never coexists with its baked-in folded twin", () => {
+  /* the folded arms are the - shading flanking the chest (rows 20-27,
+     left cols ~49-55, right cols ~70-77). A pose that raises an arm must
+     ride an armless base, so that zone is plain = fur on the raised side. */
+  const zones = { l: [49, 56], r: [69, 77] };
+  const raised = {
+    wave_lo: ["r"], wave_hi: ["r"], point_r: ["r"], point_l: ["l"],
+    cheer: ["l", "r"],
+  };
+  for (const [pose, sides] of Object.entries(raised)) {
+    const rows = F[pose].split("\n");
+    for (const side of sides) {
+      for (let r = 20; r <= 27; r++) {
+        const band = rows[r].slice(zones[side][0], zones[side][1]);
+        assert.doesNotMatch(
+          band, /-{3}/,
+          `${pose}: folded-arm shading still present on the ${side} at row ${r}`
+        );
+      }
+    }
+  }
+  /* and the erasing never leaks into the sentry itself */
+  assert.match(F.sentry.split("\n")[22].slice(69, 77), /-{3}/);
+});
+
+test("sleep: duck with the eyes shut, same crouch, same baseline corrections", () => {
+  const duck = F.duck.split("\n"), sleep = F.sleep.split("\n");
+  assert.doesNotMatch(sleep[13], /[#@]/, "no open pupils");
+  for (let r = 0; r < duck.length; r++) {
+    if (r !== 13) assert.equal(sleep[r], duck[r], `row ${r} is duck's`);
+  }
+  assert.equal(scene.KAT_DY.sleep, scene.KAT_DY.duck);
+  assert.deepEqual(scene.KAT_GROUND_ROWS.sleep, scene.KAT_GROUND_ROWS.duck);
+});
+
+test("every step of every animation references a real frame and keeps the floor still", () => {
+  const dots = (row) => (row.match(/\./g) || []).length;
+  for (const [anim, seq] of Object.entries(scene.ANIMS)) {
+    for (const [frame, caption, hold, dx, dy] of seq) {
+      assert.ok(F[frame], `${anim}: frame "${frame}" exists`);
+      assert.equal(typeof caption, "string");
+      assert.ok(hold > 0, `${anim}: hold is positive`);
+      const rows = scene
+        .renderFrame(NOON, frame, F, SPR, { dx: dx || 0, dy: dy || 0 }, { ambient: false })
+        .text.split("\n");
+      const groundRows = rows.flatMap((r, i) => (dots(r) >= 30 ? [i] : []));
+      assert.deepEqual(
+        groundRows,
+        [GRID.groundY, GRID.groundY + 1],
+        `${anim} step "${frame}" dx${dx || 0} dy${dy || 0} moved the ground`
+      );
+    }
+  }
+  /* the dance pool only offers real animations */
+  for (const d of scene.DANCES) assert.ok(scene.ANIMS[d], `dance "${d}" exists`);
+});
+
+test("scheduler: night swaps the idle table for the nap, dawn wakes her", () => {
+  /* day (or no phase) reads ANIMS.idle */
+  assert.equal(scene.schedStep(scene.mkSched(), "day").frame, scene.ANIMS.idle[0][0]);
+  assert.equal(scene.schedStep(scene.mkSched()).frame, scene.ANIMS.idle[0][0]);
+  /* night reads ANIMS.idle_night, and the state machine still loops */
+  let st = scene.mkSched();
+  const seen = [];
+  for (let i = 0; i < scene.ANIMS.idle_night.length; i++) {
+    const step = scene.schedStep(st, "night");
+    seen.push(step.frame);
+    st = step.state;
+  }
+  assert.deepEqual(seen, scene.ANIMS.idle_night.map((s) => s[0]));
+  assert.equal(st.mode, "idle");
+  /* a phase flip mid-lap can leave i past the shorter table: it must clamp */
+  const deep = { mode: "idle", i: scene.ANIMS.idle.length - 1, queued: null };
+  assert.equal(scene.schedStep(deep, "night").frame, scene.ANIMS.idle_night[0][0]);
+  /* one-shot anims are unaffected by phase */
+  st = scene.schedRequest(scene.mkSched(), "wave");
+  assert.equal(scene.schedStep(st, "night").frame, scene.ANIMS.wave[0][0]);
+});
+
+test("ambient: deterministic, phase-gated, and flags the bird only overhead", () => {
+  /* same instant -> same result */
+  const d = new Date(2026, 0, 14, 12, 0, 14);
+  assert.deepEqual(scene.ambient(d, "day", SPR), scene.ambient(d, "day", SPR));
+  /* dawn and sunset have no visitors */
+  for (const phase of ["dawn", "sunset"]) {
+    assert.deepEqual(scene.ambient(d, phase, SPR), { sprites: [], event: null });
+  }
+  /* sweep a day: birds only fly by day, stars only fall at night, and the
+     bird event is raised at some point of some flyby */
+  let sawBirdSprite = false, sawBirdEvent = false, sawStar = false;
+  for (let m = 0; m < 60; m++) {
+    for (let s = 0; s < 60; s += 2) {
+      const day = scene.ambient(new Date(2026, 0, 14, 12, m, s), "day", SPR);
+      const night = scene.ambient(new Date(2026, 0, 14, 22, m, s), "night", SPR);
+      if (day.sprites.length) { sawBirdSprite = true; assert.notEqual(day.event, "star"); }
+      if (day.event === "bird") sawBirdEvent = true;
+      if (night.sprites.length) { sawStar = true; assert.equal(night.event, "star"); }
+      for (const sp of [...day.sprites, ...night.sprites]) {
+        assert.ok(sp.y < GRID.skyRows, "visitors stay in the sky band");
+      }
+    }
+  }
+  assert.ok(sawBirdSprite, "a bird flew by within the hour");
+  assert.ok(sawBirdEvent, "and was overhead at some point");
+  assert.ok(sawStar, "a star fell within the hour");
+  /* renderFrame carries the event through, and opts.ambient=false drops it */
+  const withB = scene.renderFrame(new Date(2026, 0, 14, 12, 0, 16), "sentry", F, SPR);
+  const withoutB = scene.renderFrame(
+    new Date(2026, 0, 14, 12, 0, 16), "sentry", F, SPR, null, { ambient: false }
+  );
+  assert.equal(withoutB.event, null);
+  assert.notEqual(withB.text, withoutB.text, "the visitor is drawn");
 });
 
 test("sway offsets move the meerkat but not the scenery or the dune line", () => {

@@ -8,13 +8,15 @@ const artEl = document.getElementById("art");
 const infoEl = document.getElementById("info");
 
 S.expandFrames(F, FD);
+S.expandRig(F, RIG);
 
-/* fixed lab date unless ?time= overrides the clock */
+/* fixed lab date unless ?time=HH:MM[:SS] overrides the clock (seconds
+   matter to the ambient events: the bird/star ride the seconds hand) */
 function labDate() {
   const t = q.get("time");
   if (!t) return new Date();
-  const [h, m] = t.split(":").map(Number);
-  return new Date(2026, 0, 14, h, m || 0, 0);
+  const [h, m, s] = t.split(":").map(Number);
+  return new Date(2026, 0, 14, h, m || 0, s || 0);
 }
 
 /* row/col ruler around a block of text (?grid=1) */
